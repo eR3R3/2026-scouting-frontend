@@ -2,132 +2,72 @@
 
 import { useEffect, useRef } from 'react';
 import * as echarts from 'echarts';
-import { calculateScore, calculateEndGameScore } from '@/app/lib/utils';
+import { calculateAutoScore, calculateTeleopScore, calculateEndGameScore } from '@/app/lib/utils';
 
 export function TeamComparisonChart({ records }) {
   const chartRef = useRef(null);
 
   useEffect(() => {
     if (!records || !chartRef.current) return;
-    
+
     interface TeamData {
-      matches: any[],
-      autoScores: any[],
-      teleopScores: any[],
-      totalScores: any[],
-      climbSuccess: number,
-      matchCount: number
-    };
+      matches: number[];
+      totalScores: number[];
+      matchCount: number;
+    }
 
-    // Group records by team
-    const teamData = records.reduce((acc, record) => {
-      if (!acc[record.team]) {
-        acc[record.team] = {
-          matches: [],
-          autoScores: [],
-          teleopScores: [],
-          totalScores: [],
-          climbSuccess: 0,
-          matchCount: 0
-        };
+    const teamData: Record<number, TeamData> = {};
+
+    records.forEach(record => {
+      if (!record.team) return;
+      if (!teamData[record.team]) {
+        teamData[record.team] = { matches: [], totalScores: [], matchCount: 0 };
       }
 
-      const autoScore = calculateScore(record.autonomous, true);
-      const teleopScore = calculateScore(record.teleop, false);
-      const endGameScore = calculateEndGameScore(record.endAndAfterGame.stopStatus);
-      const totalScore = autoScore + teleopScore + endGameScore;
+      const autoScore = calculateAutoScore(record.autonomous);
+      const teleopScore = calculateTeleopScore(record.teleop);
+      const endGameScore = calculateEndGameScore(record.endAndAfterGame?.towerStatus);
 
-      acc[record.team].matches.push(record.matchNumber);
-      acc[record.team].autoScores.push(autoScore);
-      acc[record.team].teleopScores.push(teleopScore);
-      acc[record.team].totalScores.push(totalScore);
-      acc[record.team].matchCount++;
-      if (['Deep Climb', 'Shallow Climb'].includes(record.endAndAfterGame.stopStatus)) {
-        acc[record.team].climbSuccess++;
-      }
+      teamData[record.team].matches.push(record.matchNumber);
+      teamData[record.team].totalScores.push(autoScore + teleopScore + endGameScore);
+      teamData[record.team].matchCount++;
+    });
 
-      return acc;
-    }, {});
-
-    // Performance Trend Chart
     const chart = echarts.init(chartRef.current);
-    const trendOption = {
-      title: {
-        text: 'Team Performance Comparison',
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {
-          type: 'cross'
-        }
-      },
+    chart.setOption({
+      title: { text: 'Team Performance Comparison', left: 'center' },
+      tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
       legend: {
-        data: Object.keys(teamData).map(team => `Team ${team}`),
-        top: 30,
-        type: 'scroll',
-        textStyle: {
-          fontSize: 10
-        },
-        pageButtonItemGap: 5,
-        pageButtonGap: 5,
-        pageIconSize: 12
+        data: Object.keys(teamData).map(t => `Team ${t}`),
+        top: 30, type: 'scroll',
       },
-      grid: {
-        left: '10%',
-        right: '5%',
-        bottom: '15%',
-        top: '30%',
-        containLabel: true
-      },
+      grid: { left: '10%', right: '5%', bottom: '15%', top: '30%', containLabel: true },
       xAxis: {
         type: 'category',
-        data: Array.from({ length: Math.max(...Object.values(teamData).map(d => (d as TeamData).matches.length!)) }, (_, i) => `Match ${i + 1}`),
-        name: 'Match Number'
+        data: Array.from(
+          { length: Math.max(...Object.values(teamData).map(d => d.matches.length), 0) },
+          (_, i) => `Match ${i + 1}`,
+        ),
+        name: 'Match Number',
       },
-      yAxis: {
-        type: 'value',
-        name: 'Points'
-      },
-      series: Object.entries(teamData).map(([team, data]) => ({
+      yAxis: { type: 'value', name: 'Points' },
+      series: Object.entries(teamData).map(([team, d]) => ({
         name: `Team ${team}`,
         type: 'line',
-        data: (data as any).totalScores,
+        data: d.totalScores,
         smooth: true,
-        markPoint: {
-          data: [
-            { type: 'max', name: 'Max' },
-            { type: 'min', name: 'Min' }
-          ]
-        }
-      }))
-    };
+        markPoint: { data: [{ type: 'max', name: 'Max' }, { type: 'min', name: 'Min' }] },
+      })),
+    });
 
-    chart.setOption(trendOption);
-
-    const handleResize = () => {
-      chart.resize();
-    };
-
+    const handleResize = () => chart.resize();
     window.addEventListener('resize', handleResize);
-
-    return () => {
-      chart.dispose();
-      window.removeEventListener('resize', handleResize);
-    };
+    return () => { chart.dispose(); window.removeEventListener('resize', handleResize); };
   }, [records]);
 
   return (
     <div className="space-y-4">
-      <div 
-        ref={chartRef} 
-        style={{ width: '100%', height: '700px' }} 
-        className="min-h-[700px]" 
-      />
+      <div ref={chartRef} style={{ width: '100%', height: '700px' }} className="min-h-[700px]" />
     </div>
   );
 }
-
-function average(arr: number[]): number {
-  return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
-} 

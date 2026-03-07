@@ -3,15 +3,13 @@
 import React, { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from 'next/navigation';
-import { ChartNoAxesGantt, Binoculars, BookUser, Home, Settings, Menu, X } from "lucide-react";
+import { ChartNoAxesGantt, Binoculars, BookUser, Home, Settings, Menu, X, LogOut } from "lucide-react";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import {jwtDecode} from "jwt-decode";
-import Image from "next/image";
 
-import { getCookie, hasCookie } from "cookies-next/client";
+import { getCookie, hasCookie, deleteCookie } from "cookies-next/client";
 
 
-//sub in with the ironpulse logo
 const Logo = () => (
   <svg width="64" height="64" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
     <g id="Complete-Logo" stroke="none" strokeWidth="1" fill="none" fillRule="evenodd">
@@ -37,7 +35,6 @@ const Logo = () => (
 export type JwtPayload = {
   name: string;
   sub: string;
-  avatarUrl: string;
   roles: Role[];
 };
 
@@ -45,6 +42,8 @@ export enum Role {
   USER = 'user',
   ADMIN = 'admin',
 }
+
+const AUTH_PAGES = ['/login', '/register'];
 
 export default function NavBar() {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
@@ -60,27 +59,37 @@ export default function NavBar() {
   ];
 
   useEffect(() => {
-    // Redirect to login if not logged in
-    if (!isLoggedIn && window.location.pathname !== '/auth/feishu') {
-      window.location.assign(`https://accounts.feishu.cn/open-apis/authen/v1/authorize?client_id=cli_a71a0cebd21a900d&redirect_uri=${process.env.NEXT_PUBLIC_FEISHU_REDIRECT_URI}`);
+    if (!isLoggedIn && !AUTH_PAGES.includes(pathname)) {
+      window.location.assign('/login');
       return;
     }
 
-    // Try to get user info if logged in
-    if (isLoggedIn && window.location.pathname !== '/auth/feishu') {
+    if (isLoggedIn && AUTH_PAGES.includes(pathname)) {
+      window.location.assign('/');
+      return;
+    }
+
+    if (isLoggedIn) {
       try {
         const token = getCookie("Authorization");
-        console.log(token);
         if (token) {
           const payload = jwtDecode<JwtPayload>(token);
-          console.log(payload);
           setUserInfo(payload);
         }
       } catch (error) {
         console.error("Failed to decode token:", error);
       }
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, pathname]);
+
+  function handleLogout() {
+    deleteCookie("Authorization");
+    window.location.href = "/login";
+  }
+
+  if (AUTH_PAGES.includes(pathname)) {
+    return null;
+  }
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 
@@ -132,17 +141,25 @@ export default function NavBar() {
           </div>
         </div>
 
-        {/* Theme Switcher and Avatar */}
-        <div className="flex justify-end gap-4">
+        {/* Theme Switcher, User Info, and Logout */}
+        <div className="flex justify-end gap-4 items-center">
           <div className="sm:flex hidden items-center">
             <ThemeSwitcher />
           </div>
 
-          <div className="flex items-center">
-            {userInfo?.avatarUrl && <img src={userInfo?.avatarUrl} onClick={()=>{
-              window.location.assign(`https://accounts.feishu.cn/open-apis/authen/v1/authorize?client_id=cli_a71a0cebd21a900d&redirect_uri=${process.env.NEXT_PUBLIC_FEISHU_REDIRECT_URI}`);
-            }} alt="IronPulse" width={45} height={45} className="rounded-full" />}
-          </div>
+          {userInfo && (
+            <span className="text-sm font-medium text-gray-700 dark:text-zinc-300 hidden sm:block">
+              {userInfo.name}
+            </span>
+          )}
+
+          <button
+            onClick={handleLogout}
+            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-800/70 transition-colors"
+            aria-label="Logout"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Mobile Menu */}
@@ -170,16 +187,30 @@ export default function NavBar() {
                 </Link>
               ))}
               
-              {/* Add theme switcher to mobile menu */}
               <div className="flex items-center gap-3 w-full px-4 py-3 mt-2">
                 <span className="text-gray-600 dark:text-zinc-400">Theme:</span>
                 <ThemeSwitcher />
               </div>
+
+              {userInfo && (
+                <div className="flex items-center gap-3 w-full px-4 py-3">
+                  <span className="text-gray-600 dark:text-zinc-400">{userInfo.name}</span>
+                </div>
+              )}
+
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-3 w-full px-4 py-3 rounded-lg
+                  text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20
+                  transition-all duration-200"
+              >
+                <LogOut className="w-5 h-5" />
+                <span>Logout</span>
+              </button>
             </div>
           </div>
         )}
       </div>
     </nav>
   );
-} 
-
+}

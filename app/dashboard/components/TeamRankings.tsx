@@ -3,40 +3,20 @@
 import { useState, useMemo } from 'react';
 import { Card } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/react";
-import { calculateScore, calculateEndGameScore } from '@/app/lib/utils';
+import { calculateAutoScore, calculateTeleopScore, calculateEndGameScore } from '@/app/lib/utils';
 
 interface MatchRecord {
   team: number;
   autonomous: {
-    coralCount: {
-      l4: number;
-      l3: number;
-      l2: number;
-      l1: number;
-      dropOrMiss: number;
-    };
-    algaeCount: {
-      netShot: number;
-      processor: number;
-      dropOrMiss: number;
-    };
+    fuelCount: number;
+    isTowerSuccess: boolean;
   };
   teleop: {
-    coralCount: {
-      l4: number;
-      l3: number;
-      l2: number;
-      l1: number;
-      dropOrMiss: number;
-    };
-    algaeCount: {
-      netShot: number;
-      processor: number;
-      dropOrMiss: number;
-    };
+    fuelCount: number;
+    humanFuelCount: number;
   };
   endAndAfterGame: {
-    stopStatus: string;
+    towerStatus: string;
   };
 }
 
@@ -44,9 +24,9 @@ interface TeamStats {
   teamNumber: number;
   avgAutoScore: number;
   avgTeleopScore: number;
+  avgEndGameScore: number;
   avgTotalScore: number;
-  deepClimbRate: number;
-  shallowClimbRate: number;
+  towerSuccessRate: number;
   matches: number;
 }
 
@@ -54,8 +34,8 @@ const sortOptions = [
   { value: 'totalScore', label: 'Total Score' },
   { value: 'autoScore', label: 'Auto Score' },
   { value: 'teleopScore', label: 'Teleop Score' },
-  { value: 'deepClimb', label: 'Deep Climb Success' },
-  { value: 'shallowClimb', label: 'Shallow Climb Success' },
+  { value: 'endGameScore', label: 'End Game Score' },
+  { value: 'towerSuccess', label: 'Auto Tower Success' },
 ];
 
 export function TeamRankings({ matchRecords }: { matchRecords: MatchRecord[] }) {
@@ -67,69 +47,48 @@ export function TeamRankings({ matchRecords }: { matchRecords: MatchRecord[] }) 
       autoTotal: number;
       teleopTotal: number;
       endGameTotal: number;
-      deepClimbs: number;
-      shallowClimbs: number;
+      towerSuccesses: number;
     }>();
 
     matchRecords.forEach(record => {
       const team = record.team;
       if (!team) return;
 
-      const autoScore = calculateScore(record.autonomous, true);
-      const teleopScore = calculateScore(record.teleop, false);
-      const endGameScore = calculateEndGameScore(record.endAndAfterGame.stopStatus);
-      const totalTeleopScore = teleopScore + endGameScore;
+      const autoScore = calculateAutoScore(record.autonomous);
+      const teleopScore = calculateTeleopScore(record.teleop);
+      const endGameScore = calculateEndGameScore(record.endAndAfterGame?.towerStatus);
 
       if (!stats.has(team)) {
-        stats.set(team, {
-          matches: 0,
-          autoTotal: 0,
-          teleopTotal: 0,
-          endGameTotal: 0,
-          deepClimbs: 0,
-          shallowClimbs: 0
-        });
+        stats.set(team, { matches: 0, autoTotal: 0, teleopTotal: 0, endGameTotal: 0, towerSuccesses: 0 });
       }
 
-      const teamStats = stats.get(team)!;
-      teamStats.matches++;
-      teamStats.autoTotal += autoScore;
-      teamStats.teleopTotal += totalTeleopScore;
-      teamStats.endGameTotal += endGameScore;
-
-      // Track climb success
-      if (record.endAndAfterGame.stopStatus === 'Deep Climb') {
-        teamStats.deepClimbs++;
-      } else if (record.endAndAfterGame.stopStatus === 'Shallow Climb') {
-        teamStats.shallowClimbs++;
-      }
+      const s = stats.get(team)!;
+      s.matches++;
+      s.autoTotal += autoScore;
+      s.teleopTotal += teleopScore;
+      s.endGameTotal += endGameScore;
+      if (record.autonomous?.isTowerSuccess) s.towerSuccesses++;
     });
 
     return Array.from(stats.entries()).map(([teamNumber, data]): TeamStats => ({
       teamNumber,
       avgAutoScore: data.autoTotal / data.matches,
       avgTeleopScore: data.teleopTotal / data.matches,
-      avgTotalScore: (data.autoTotal + data.teleopTotal) / data.matches,
-      deepClimbRate: (data.deepClimbs / data.matches) * 100,
-      shallowClimbRate: (data.shallowClimbs / data.matches) * 100,
-      matches: data.matches
+      avgEndGameScore: data.endGameTotal / data.matches,
+      avgTotalScore: (data.autoTotal + data.teleopTotal + data.endGameTotal) / data.matches,
+      towerSuccessRate: (data.towerSuccesses / data.matches) * 100,
+      matches: data.matches,
     }));
   }, [matchRecords]);
 
-  // Sort teams based on selected criteria
   const sortedTeams = useMemo(() => {
     return [...teamStats].sort((a, b) => {
       switch (sortBy) {
-        case 'autoScore':
-          return b.avgAutoScore - a.avgAutoScore;
-        case 'teleopScore':
-          return b.avgTeleopScore - a.avgTeleopScore;
-        case 'deepClimb':
-          return b.deepClimbRate - a.deepClimbRate;
-        case 'shallowClimb':
-          return b.shallowClimbRate - a.shallowClimbRate;
-        default:
-          return b.avgTotalScore - a.avgTotalScore;
+        case 'autoScore': return b.avgAutoScore - a.avgAutoScore;
+        case 'teleopScore': return b.avgTeleopScore - a.avgTeleopScore;
+        case 'endGameScore': return b.avgEndGameScore - a.avgEndGameScore;
+        case 'towerSuccess': return b.towerSuccessRate - a.towerSuccessRate;
+        default: return b.avgTotalScore - a.avgTotalScore;
       }
     });
   }, [teamStats, sortBy]);
@@ -138,16 +97,9 @@ export function TeamRankings({ matchRecords }: { matchRecords: MatchRecord[] }) 
     <Card className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Team Rankings</h2>
-        <Select
-          label="Sort by"
-          selectedKeys={[sortBy]}
-          onChange={(e) => setSortBy(e.target.value)}
-          className="w-48"
-        >
+        <Select label="Sort by" selectedKeys={[sortBy]} onChange={(e) => setSortBy(e.target.value)} className="w-48">
           {sortOptions.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
+            <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
           ))}
         </Select>
       </div>
@@ -161,25 +113,22 @@ export function TeamRankings({ matchRecords }: { matchRecords: MatchRecord[] }) 
               <th className="text-right py-3 px-4">Matches</th>
               <th className="text-right py-3 px-4">Avg Auto</th>
               <th className="text-right py-3 px-4">Avg Teleop</th>
+              <th className="text-right py-3 px-4">Avg EndGame</th>
               <th className="text-right py-3 px-4">Avg Total</th>
-              <th className="text-right py-3 px-4">Deep %</th>
-              <th className="text-right py-3 px-4">Shallow %</th>
+              <th className="text-right py-3 px-4">Tower %</th>
             </tr>
           </thead>
           <tbody>
             {sortedTeams.map((team, index) => (
-              <tr 
-                key={team.teamNumber}
-                className="border-b last:border-b-0 hover:bg-default-100 transition-colors"
-              >
+              <tr key={team.teamNumber} className="border-b last:border-b-0 hover:bg-default-100 transition-colors">
                 <td className="py-3 px-4">{index + 1}</td>
                 <td className="py-3 px-4">{team.teamNumber}</td>
                 <td className="text-right py-3 px-4">{team.matches}</td>
                 <td className="text-right py-3 px-4">{team.avgAutoScore.toFixed(1)}</td>
                 <td className="text-right py-3 px-4">{team.avgTeleopScore.toFixed(1)}</td>
+                <td className="text-right py-3 px-4">{team.avgEndGameScore.toFixed(1)}</td>
                 <td className="text-right py-3 px-4">{team.avgTotalScore.toFixed(1)}</td>
-                <td className="text-right py-3 px-4">{team.deepClimbRate.toFixed(1)}%</td>
-                <td className="text-right py-3 px-4">{team.shallowClimbRate.toFixed(1)}%</td>
+                <td className="text-right py-3 px-4">{team.towerSuccessRate.toFixed(1)}%</td>
               </tr>
             ))}
           </tbody>
@@ -187,4 +136,4 @@ export function TeamRankings({ matchRecords }: { matchRecords: MatchRecord[] }) 
       </div>
     </Card>
   );
-} 
+}

@@ -1,61 +1,46 @@
-interface CoralCount {
-  l4: number;
-  l3: number;
-  l2: number;
-  l1: number;
-  dropOrMiss: number;
-}
-
-interface AlgaeCount {
-  netShot: number;
-  processor: number;
-  dropOrMiss: number;
-}
-
-interface Phase {
-  coralCount: CoralCount;
-  algaeCount: AlgaeCount;
+interface Autonomous {
+  fuelCount: number;
+  isTowerSuccess: boolean;
   leftStartingZone?: boolean;
+  autoStart?: number;
 }
 
-export function calculateScore(phase: Phase | null | undefined, isAuto: boolean = false): number {
-  if (!phase) return 0;
-  
-  // Coral points
-  const coralPoints = isAuto ? 
-    { l1: 3, l2: 4, l3: 6, l4: 7 } : 
-    { l1: 2, l2: 3, l3: 4, l4: 5 };
-  
-  const coralScore = 
-    (phase.coralCount.l1 || 0) * coralPoints.l1 +
-    (phase.coralCount.l2 || 0) * coralPoints.l2 +
-    (phase.coralCount.l3 || 0) * coralPoints.l3 +
-    (phase.coralCount.l4 || 0) * coralPoints.l4;
-
-  // Algae points are same for both auto and teleop
-  const algaeScore = 
-    (phase.algaeCount.netShot || 0) * 4 +
-    (phase.algaeCount.processor || 0) * 6;
-    
-  // Update from 2 to 3 points for leaving starting zone in auto phase
-  const leftStartingZonePoints = isAuto && phase.leftStartingZone ? 3 : 0;
-
-  return coralScore + algaeScore + leftStartingZonePoints;
+interface Teleop {
+  fuelCount: number;
+  humanFuelCount: number;
+  passBump?: boolean;
+  passTrench?: boolean;
+  fetchBallPreference?: string;
 }
 
-export function calculateEndGameScore(status: string): number {
-  switch (status) {
-    case 'Deep Climb':
-      return 12;
-    case 'Shallow Climb':
-      return 6;
-    case 'Park':
-      return 2;
-    default:
-      return 0;
-  }
-} 
+export const TOWER_POINTS = { L3: 10, L2: 20, L1: 30 } as const;
+export const AUTO_TOWER_L1_POINTS = 15;
+export const FUEL_POINTS = 1;
 
+export function calculateAutoScore(auto: Autonomous | null | undefined): number {
+  if (!auto) return 0;
+  const fuelScore = (auto.fuelCount || 0) * FUEL_POINTS;
+  const towerScore = auto.isTowerSuccess ? AUTO_TOWER_L1_POINTS : 0;
+  return fuelScore + towerScore;
+}
+
+export function calculateTeleopScore(teleop: Teleop | null | undefined): number {
+  if (!teleop) return 0;
+  return ((teleop.fuelCount || 0) + (teleop.humanFuelCount || 0)) * FUEL_POINTS;
+}
+
+export function calculateEndGameScore(towerStatus: string | null | undefined): number {
+  if (!towerStatus || towerStatus === 'None') return 0;
+  return TOWER_POINTS[towerStatus as keyof typeof TOWER_POINTS] || 0;
+}
+
+export function calculateTotalScore(
+  auto: Autonomous | null | undefined,
+  teleop: Teleop | null | undefined,
+  towerStatus: string | null | undefined,
+): number {
+  return calculateAutoScore(auto) + calculateTeleopScore(teleop) + calculateEndGameScore(towerStatus);
+}
 
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
