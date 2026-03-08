@@ -17,7 +17,7 @@ interface PitScoutingData {
   comments?: string;
 }
 
-export function PitScoutingView({ teamNumber }) {
+export function PitScoutingView({ teamNumber, eventId }) {
   const [data, setData] = useState<PitScoutingData | null>(null);
 
   useEffect(() => {
