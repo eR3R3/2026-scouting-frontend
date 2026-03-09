@@ -15,7 +15,8 @@ export default function Step3() {
   };
 
   function handleGoBack() {
-    router.push("/scouting/step2");
+    // Go back to step1 (step2 is removed)
+    router.push("/scouting/step1");
   }
 
   const handleFuelIncrement = () => {

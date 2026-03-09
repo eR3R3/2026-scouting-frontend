@@ -1,12 +1,15 @@
 "use client";
 
-import React, { createContext, useState, useContext } from "react";
+import React, { createContext, useState, useContext, useEffect } from "react";
 
 // @ts-ignore
 const FormContext = createContext();
 
 export const FormProvider = ({ children }) => {
   const [formData, setFormData] = useState({
+    eventId: "",
+    eventMatchId: "",
+    scoutingData: null,
     matchType: "",
     matchNumber: 0,
     alliance: "",
@@ -35,6 +38,26 @@ export const FormProvider = ({ children }) => {
       teleopMove: false,
     },
   });
+
+  // Load initial data from sessionStorage if available
+  useEffect(() => {
+    const scoutingData = sessionStorage.getItem('scoutingData');
+    if (scoutingData) {
+      const data = JSON.parse(scoutingData);
+      
+      // Set form data based on scouting data
+      setFormData(prev => ({
+        ...prev,
+        eventId: data.eventId || '',
+        eventMatchId: data.eventMatchId || '',
+        scoutingData: data,
+        matchType: data.selectedMatch?.tbaMatch?.matchType || data.matchType || '',
+        matchNumber: data.selectedMatch?.tbaMatch?.matchNumber || (data.matchNumber !== undefined ? data.matchNumber : 0),
+        team: data.selectedTeam?.teamNumber || data.teamNumber || 0,
+        alliance: data.alliance || '',
+      }));
+    }
+  }, []);
 
   return (
     <FormContext.Provider value={{ formData, setFormData }}>

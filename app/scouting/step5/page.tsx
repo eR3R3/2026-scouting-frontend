@@ -25,34 +25,104 @@ const Step5 = () => {
   };
 
   const handleSubmit = async () => {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/scouting/record`, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${getCookie("Authorization")}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(formData),
-    });
-
-    const text = await response.text();
-    let data;
     try {
-      data = text ? JSON.parse(text) : {};
-    } catch (e) {
-      data = {};
-    }
+      // Get scouting data from sessionStorage
+      const scoutingData = sessionStorage.getItem('scoutingData');
+      let submitData: any = {
+        scoutEventId: formData.eventId,
+        eventMatchId: formData.eventMatchId,
+        matchType: formData.matchType,
+        alliance: formData.alliance,
+        teamNumber: formData.team,
+        matchNumber: formData.matchNumber, // ✅ Always include matchNumber from FormContext
+        autonomous: formData.autonomous,
+        teleop: formData.teleop,
+        endAndAfterGame: formData.endAndAfterGame,
+      };
 
-    if (response.ok) {
-      toast({
-        title: "Success",
-        description: "Match record submitted successfully",
+      if (scoutingData) {
+        const data = JSON.parse(scoutingData);
+
+        // If coming from TBA/custom start pages, ensure IDs are populated.
+        // TBA page stores selectedMatch (EventMatch) and selectedTeam (EventTeam).
+        if (data.selectedMatch && data.selectedTeam) {
+          submitData = {
+            ...submitData,
+            scoutEventId: data.eventId,
+            eventMatchId: data.selectedMatch.id,
+            teamNumber: data.selectedTeam.teamNumber,
+            alliance: data.selectedMatch.tbaMatch?.redAlliance?.includes(data.selectedTeam.teamNumber)
+              ? 'Red'
+              : 'Blue',
+            matchType: data.selectedMatch.tbaMatch?.matchType || submitData.matchType,
+          };
+        }
+
+        // Custom page stores matchType/matchNumber/teamNumber/alliance, but may not have an EventMatch id.
+        // In that case, rely on formData.eventMatchId if user picked one in step1.
+        // Always try to add Custom mode data if available, regardless of condition
+        if (data.matchNumber !== undefined || data.matchType || data.teamNumber || data.alliance) {
+          submitData = {
+            ...submitData,
+            scoutEventId: data.eventId || submitData.scoutEventId,
+            matchType: data.matchType || submitData.matchType,
+            matchNumber: data.matchNumber !== undefined ? data.matchNumber : 0, // Always include matchNumber
+            teamNumber: data.teamNumber || submitData.team,
+            alliance: data.alliance || submitData.alliance,
+          };
+        }
+      }
+
+      if (!submitData.scoutEventId || typeof submitData.scoutEventId !== 'string') {
+        throw new Error('scoutEventId is missing');
+      }
+      // eventMatchId is optional for custom events
+      // if (!submitData.eventMatchId || typeof submitData.eventMatchId !== 'string') {
+      //   throw new Error('eventMatchId is missing');
+      // }
+      if (!Number.isInteger(submitData.teamNumber) || submitData.teamNumber < 1) {
+        throw new Error('teamNumber is invalid');
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/scouting/record`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${getCookie("Authorization")}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(submitData),
       });
-      router.push("/dashboard");
-    } else {
+
+      const text = await response.text();
+      let data;
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (e) {
+        data = {};
+      }
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Match record submitted successfully",
+        });
+        
+        // Clear sessionStorage
+        sessionStorage.removeItem('scoutingData');
+        
+        router.push("/dashboard");
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: data.message || "Failed to submit match record",
+        });
+      }
+    } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: data.message || "Failed to submit match record",
+        description: "An error occurred while submitting",
       });
     }
   };

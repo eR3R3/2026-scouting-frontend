@@ -3,7 +3,7 @@
 import React, { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from 'next/navigation';
-import { ChartNoAxesGantt, Binoculars, BookUser, Home, Settings, Menu, X, LogOut } from "lucide-react";
+import { ChartNoAxesGantt, Binoculars, BookUser, Home, Settings, Menu, X, LogOut, Calendar } from "lucide-react";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import {jwtDecode} from "jwt-decode";
 
@@ -53,6 +53,7 @@ export default function NavBar() {
 
   const menuItems = [
     { name: "Home", href: "/", icon: <Home className="w-5 h-5" /> },
+    { name: "Events", href: "/events", icon: <Calendar className="w-5 h-5" /> },
     { name: "Pit Scouting", href: "/pit-scouting", icon: <BookUser className="w-5 h-5" /> },
     { name: "Scouting", href: "/scouting/step1", icon: <Binoculars className="w-5 h-5" /> },
     { name: "DashBoard", href: "/dashboard", icon: <Settings className="w-5 h-5" /> },

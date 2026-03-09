@@ -24,11 +24,6 @@ export default function RootLayout({ children }) {
               value="/scouting/step1"
             />
             <Tab
-              key="/scouting/step2"
-              title="Starting Point"
-              value="/scouting/step2"
-            />
-            <Tab
               key="/scouting/step3"
               title="Autonomous"
               value="/scouting/step3"

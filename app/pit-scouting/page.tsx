@@ -1,18 +1,29 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, Suspense } from 'react';
 import { Camera, X } from 'lucide-react';
-import { Input, Button, Card, Textarea } from "@heroui/react";
+import { Input, Button, Card, Textarea, Select, SelectItem, Autocomplete, AutocompleteItem } from "@heroui/react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getCookie } from 'cookies-next/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
+import { EventsAPI } from '@/lib/api/events';
+import { ScoutEvent } from '@/lib/api/types';
 
-export default function PitScouting() {
+function PitScoutingContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const eventId = searchParams.get('eventId');
+  
+  const [events, setEvents] = useState<ScoutEvent[]>([]);
+  const [teams, setTeams] = useState<any[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+  const [loadingTeams, setLoadingTeams] = useState(false);
+  
   const [photos, setPhotos] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const router = useRouter();
   const [formData, setFormData] = useState({
+    eventId: '',
     teamNumber: '',
     capabilities: {
       towerL1: false,
@@ -25,6 +36,72 @@ export default function PitScouting() {
     comments: '',
     photos: [] as string[],
   });
+
+  // Load events
+  useEffect(() => {
+    const loadEvents = async () => {
+      try {
+        const eventsData = await EventsAPI.getAllEvents();
+        setEvents(eventsData);
+      } catch (error) {
+        toast({ title: 'Error', description: 'Failed to load events' });
+      } finally {
+        setLoadingEvents(false);
+      }
+    };
+    loadEvents();
+  }, []);
+
+  // Load teams when event is selected
+  useEffect(() => {
+    if (formData.eventId) {
+      const loadTeams = async () => {
+        try {
+          setLoadingTeams(true);
+          const selectedEvent = events.find(e => e.id === formData.eventId);
+          const isCustomEvent = selectedEvent?.sourceType === 'CUSTOM';
+          
+          if (isCustomEvent) {
+            // For custom events, load all teams from database
+            const allTeamsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/team/findAll`);
+            const allTeamsData = await allTeamsResponse.json();
+            setTeams(allTeamsData.map((team: any) => ({
+              id: team.id,
+              teamNumber: team.number,
+              name: team.name || `Team ${team.number}`
+            })));
+          } else {
+            // For TBA events, load event-specific teams
+            const teamsData = await EventsAPI.getEventTeams(formData.eventId);
+            setTeams(teamsData.map(team => ({
+              id: team.id,
+              teamNumber: team.teamNumber,
+              name: team.team?.name || `Team ${team.teamNumber}`
+            })));
+          }
+        } catch (error) {
+          toast({ title: 'Error', description: 'Failed to load teams' });
+          setTeams([]); // Clear teams on error
+        } finally {
+          setLoadingTeams(false);
+        }
+      };
+      loadTeams();
+    }
+  }, [formData.eventId, events]);
+
+  // Auto-fill from URL params
+  useEffect(() => {
+    const urlEventId = searchParams.get('eventId');
+    const teamNumber = searchParams.get('teamNumber');
+    if (urlEventId || teamNumber) {
+      setFormData(prev => ({
+        ...prev,
+        eventId: urlEventId || '',
+        teamNumber: teamNumber || ''
+      }));
+    }
+  }, [searchParams]);
 
   const compressImage = (base64: string): Promise<string> => {
     return new Promise((resolve) => {
@@ -78,6 +155,7 @@ export default function PitScouting() {
 
       const submitData = {
         teamNumber: parseInt(formData.teamNumber),
+        eventId: formData.eventId,
         comments: formData.comments,
         capabilities: formData.capabilities,
         chassisType: formData.chassisType,
@@ -97,7 +175,13 @@ export default function PitScouting() {
       }
 
       toast({ title: "Success!", description: "Form submitted successfully" });
-      setTimeout(() => router.push("/"), 1500);
+      
+      // Redirect based on form data
+      if (formData.eventId) {
+        setTimeout(() => router.push(`/events/${formData.eventId}`), 1500);
+      } else {
+        setTimeout(() => router.push("/dashboard"), 1500);
+      }
     } catch (error) {
       toast({ variant: "destructive", title: "Error", description: error instanceof Error ? error.message : "Failed to submit" });
     }
@@ -128,8 +212,69 @@ export default function PitScouting() {
             <div className="space-y-8">
               {/* Team Info */}
               <div className="space-y-4">
-                <h2 className="text-xl font-google-sans font-semibold">Team Information</h2>
-                <Input type="number" label="Team Number" placeholder="Enter team number" variant="bordered" className="max-w-xs" value={formData.teamNumber} onChange={(e) => handleInputChange('teamNumber', e.target.value)} />
+                <h2 className="text-xl font-google-sans font-semibold">Event & Team Information</h2>
+                
+                {/* Event Selector */}
+                <Select
+                  placeholder="Select an event"
+                  selectedKeys={formData.eventId ? new Set([formData.eventId]) : new Set()}
+                  onSelectionChange={(keys) => {
+                    const eventId = Array.from(keys)[0] as string;
+                    setFormData(prev => ({ ...prev, eventId, teamNumber: '' }));
+                  }}
+                  isLoading={loadingEvents}
+                  label="Event"
+                >
+                  {events.map((event) => (
+                    <SelectItem key={event.id} textValue={event.name}>
+                      <div className="flex flex-col">
+                        <div className="font-semibold">{event.name}</div>
+                        <div className="text-sm text-gray-600">
+                          {event.sourceType} {event.tbaEventKey && `• ${event.tbaEventKey}`}
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </Select>
+
+                {/* Team Selector - Input for Custom Events, Dropdown for TBA Events */}
+                {(() => {
+                  const selectedEvent = events.find(e => e.id === formData.eventId);
+                  const isCustomEvent = selectedEvent?.sourceType === 'CUSTOM';
+                  
+                  return isCustomEvent ? (
+                    <Input
+                      label="Team Number"
+                      placeholder="Enter team number"
+                      type="number"
+                      variant="bordered"
+                      className="max-w-xs"
+                      value={formData.teamNumber}
+                      onChange={(e) => handleInputChange('teamNumber', e.target.value)}
+                      min={1}
+                    />
+                  ) : (
+                    <Select
+                      placeholder="Select a team"
+                      selectedKeys={formData.teamNumber ? new Set([String(formData.teamNumber)]) : new Set()}
+                      onSelectionChange={(keys) => {
+                        const teamNumber = Array.from(keys)[0] as string;
+                        setFormData(prev => ({ ...prev, teamNumber }));
+                      }}
+                      isLoading={loadingTeams}
+                      isDisabled={!formData.eventId}
+                      label="Team"
+                    >
+                      {teams.map((team) => (
+                        <SelectItem key={String(team.teamNumber)} textValue={String(team.teamNumber)}>
+                          <div className="flex flex-col">
+                            <div className="font-semibold">Team {team.teamNumber}</div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </Select>
+                  );
+                })()}
               </div>
 
               {/* Tower Capabilities */}
@@ -208,5 +353,13 @@ export default function PitScouting() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function PitScouting() {
+  return (
+    <Suspense fallback={<div className="container mx-auto px-4 py-8 text-center">Loading...</div>}>
+      <PitScoutingContent />
+    </Suspense>
   );
 }

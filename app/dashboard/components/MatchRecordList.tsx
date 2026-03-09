@@ -6,6 +6,7 @@ import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { calculateAutoScore, calculateTeleopScore, calculateEndGameScore } from '@/app/lib/utils';
 import { toast } from "@/hooks/use-toast";
 import { getCookie } from 'cookies-next/client';
+import { MatchRecordStatus } from './MatchRecordStatus';
 
 interface MatchRecord {
   id: string;
@@ -325,16 +326,33 @@ const calculateAllianceScore = (teams) => {
   }, 0);
 };
 
-export function MatchRecordList({ teamNumber, matchType }) {
-  const [records, setRecords] = useState<GroupedMatchRecord[] | MatchRecord[]>([]);
+interface MatchRecordListProps {
+  eventId?: string;
+  eventType?: string;
+  teamNumber?: number;
+  matchType?: string;
+}
+
+export function MatchRecordList({ eventId, eventType, teamNumber, matchType }: MatchRecordListProps) {
+  const [records, setRecords] = useState<GroupedMatchRecord[]>([]);
+  const [expandedMatches, setExpandedMatches] = useState<number[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<GroupedMatchRecord | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showStats, setShowStats] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState(null);
   const [showTeamStats, setShowTeamStats] = useState(false);
-  const [expandedMatches, setExpandedMatches] = useState<number[]>([]);
+  const [selectedTeam, setSelectedTeam] = useState<any>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTeam, setEditedTeam] = useState<any>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteMatchNumber, setDeleteMatchNumber] = useState('');
 
   useEffect(() => {
+    // Only fetch data if eventId is provided
+    if (!eventId) {
+      setRecords([]);
+      return;
+    }
+
     const groupRecords = (data: MatchRecord[]) => {
       const grouped: Record<string, GroupedMatchRecord> = {};
       data.forEach(record => {
@@ -346,24 +364,24 @@ export function MatchRecordList({ teamNumber, matchType }) {
     };
 
     if (!teamNumber) {
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/scouting/teams`)
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/scouting/event/${eventId}`)
         .then(res => res.json())
-        .then((data: MatchRecord[]) => setRecords(groupRecords(data)))
+        .then((data: MatchRecord[]) => setRecords(groupRecords(Array.isArray(data) ? data : [])))
         .catch(err => console.error('Error:', err));
     } else {
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/scouting/${teamNumber}/matches${matchType ? `?type=${matchType}` : ''}`)
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/scouting/event/${eventId}?team=${teamNumber}`)
         .then(res => res.json())
         .then((data: MatchRecord[]) => {
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/scouting/teams`)
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/scouting/event/${eventId}`)
             .then(res => res.json())
             .then((allRecords: MatchRecord[]) => {
-              const matchNumbers = new Set(data?.map(r => r.matchNumber));
-              setRecords(groupRecords(allRecords.filter(r => matchNumbers.has(r.matchNumber))));
+              const matchNumbers = new Set((Array.isArray(data) ? data : []).map(r => r.matchNumber));
+              setRecords(groupRecords((Array.isArray(allRecords) ? allRecords : []).filter(r => matchNumbers.has(r.matchNumber))));
             });
         })
         .catch(err => console.error('Error:', err));
     }
-  }, [teamNumber, matchType]);
+  }, [eventId, teamNumber, matchType]);
 
   const renderTeamDetails = (team, matchNumber) => {
     const autoScore = calculateAutoScore(team.autonomous);
@@ -389,6 +407,36 @@ export function MatchRecordList({ teamNumber, matchType }) {
     );
   };
 
+  // Determine match status based on data completeness
+  const getMatchStatus = (teams: any[]) => {
+    const totalTeams = 6; // Standard FRC match has 6 teams (3 red, 3 blue)
+    const recordedTeams = teams.length;
+    
+    if (recordedTeams === 0) {
+      return 'unchecked';
+    }
+    
+    if (recordedTeams === totalTeams) {
+      // Check if all teams have complete data
+      const hasIncompleteData = teams.some(team => {
+        const auto = team.autonomous;
+        const teleop = team.teleop;
+        const endGame = team.endAndAfterGame;
+        
+        // Basic validation - you can enhance this based on your requirements
+        return !auto || !teleop || !endGame ||
+               typeof auto.fuelCount !== 'number' ||
+               typeof teleop.fuelCount !== 'number' ||
+               !endGame.towerStatus;
+      });
+      
+      return hasIncompleteData ? 'check-failed' : 'checked';
+    }
+    
+    // Partial data recorded
+    return 'check-failed';
+  };
+
   const toggleMatchExpand = (matchNumber: number) => {
     setExpandedMatches(prev => prev.includes(matchNumber) ? prev.filter(m => m !== matchNumber) : [...prev, matchNumber]);
   };
@@ -404,8 +452,14 @@ export function MatchRecordList({ teamNumber, matchType }) {
               <div key={match.matchNumber} className="p-3 border rounded-lg bg-default-50 hover:bg-default-100 transition-colors">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-2">
                   <div className="flex items-center gap-2 cursor-pointer mb-2 sm:mb-0" onClick={() => toggleMatchExpand(match.matchNumber)}>
-                    <h3 className="text-lg font-semibold">Match {match.matchNumber}</h3>
+                    <h3 className="text-lg font-semibold">
+                      {match.matchType === 'Qualification' ? `Qual ${match.matchNumber}` :
+                       match.matchType === 'Final' ? `Final ${match.matchNumber}` :
+                       match.matchType === 'Practice' ? `Practice ${match.matchNumber}` :
+                       `Match ${match.matchNumber}`}
+                    </h3>
                     {expandedMatches.includes(match.matchNumber) ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                    {eventType !== 'CUSTOM' && <MatchRecordStatus status={getMatchStatus(match.teams)} />}
                   </div>
                   <div className="flex flex-row justify-between items-center gap-2 flex-wrap">
                     <div className="flex items-center">
