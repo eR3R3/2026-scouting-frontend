@@ -9,9 +9,9 @@ import { getCookie } from 'cookies-next/client';
 
 const towerOptions = [
   { key: "None", label: "No Tower" },
-  { key: "L1", label: "Tower L1 (30 pts)" },
+  { key: "L1", label: "Tower L1 (10 pts)" },
   { key: "L2", label: "Tower L2 (20 pts)" },
-  { key: "L3", label: "Tower L3 (10 pts)" },
+  { key: "L3", label: "Tower L3 (30 pts)" },
 ];
 
 const Step5 = () => {

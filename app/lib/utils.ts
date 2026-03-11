@@ -13,7 +13,7 @@ interface Teleop {
   fetchBallPreference?: string;
 }
 
-export const TOWER_POINTS = { L3: 10, L2: 20, L1: 30 } as const;
+export const TOWER_POINTS = { L1: 10, L2: 20, L3: 30 } as const;
 export const AUTO_TOWER_L1_POINTS = 15;
 export const FUEL_POINTS = 1;
 
