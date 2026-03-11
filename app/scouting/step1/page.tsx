@@ -197,11 +197,16 @@ export default function Step1() {
     return true;
   });
 
-  // Get teams from selected match's alliances
+  // Get teams for selection: from match alliances if qual/final selected, else all event teams
   const selectedMatch = matches.find((m) => m.id === formData.eventMatchId);
   const matchTeams = selectedMatch?.tbaMatch 
     ? [...(selectedMatch.tbaMatch.redAlliance || []), ...(selectedMatch.tbaMatch.blueAlliance || [])]
     : [];
+  
+  // For TBA events, if matchType is not qual/final (e.g., practice or general match), show all event teams
+  const availableTeams = currentEvent?.sourceType === 'TBA' && (formData.matchType !== MatchType.QUAL && formData.matchType !== MatchType.FINAL)
+    ? teams.map(t => t.teamNumber)
+    : matchTeams;
 
   return (
     <main className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 max-w-7xl min-h-screen">
@@ -310,9 +315,8 @@ export default function Step1() {
                       selectedKeys={formData.team ? new Set([String(formData.team)]) : new Set()}
                       onSelectionChange={handleTeamChange}
                       isRequired
-                      isDisabled={!selectedMatch || matchTeams.length === 0}
                     >
-                      {matchTeams.map((teamNumber) => (
+                      {availableTeams.map((teamNumber) => (
                         <SelectItem key={String(teamNumber)} textValue={String(teamNumber)}>
                           <div className="flex flex-col">
                             <div className="font-semibold">Team {teamNumber}</div>
