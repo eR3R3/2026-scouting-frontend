@@ -15,19 +15,33 @@ export const FormProvider = ({ children }) => {
     alliance: "",
     team: 0,
     scouter: "",
+
     autonomous: {
       autoStart: 0,
       leftStartingZone: false,
       fuelCount: 0,
       isTowerSuccess: false,
+
+      // === NEW FIELDS ===
+      shooterType: "",
+      shotsTaken: null,
+      shotVolumes: "",
+      subjectiveAccuracy: null,
     },
+
     teleop: {
       fuelCount: 0,
       humanFuelCount: 0,
       passBump: false,
       passTrench: false,
       fetchBallPreference: "",
+
+      // === NEW FIELDS ===
+      shotsTaken: null,
+      shotVolumes: "",
+      subjectiveAccuracy: null,
     },
+
     endAndAfterGame: {
       towerStatus: "None",
       comments: "",
@@ -44,8 +58,7 @@ export const FormProvider = ({ children }) => {
     const scoutingData = sessionStorage.getItem('scoutingData');
     if (scoutingData) {
       const data = JSON.parse(scoutingData);
-      
-      // Set form data based on scouting data
+
       setFormData(prev => ({
         ...prev,
         eventId: data.eventId || '',
