@@ -22,6 +22,10 @@ export default function Step3() {
     }));
   };
 
+  // 统一数字转换函数
+  const toNumberOrNull = (value: string) =>
+    value === "" ? null : Number(value);
+
   return (
     <main className="container mx-auto px-4 py-8 max-w-2xl">
       <div className="text-center mb-8">
@@ -52,8 +56,10 @@ export default function Step3() {
             type="number"
             placeholder="例如：5"
             className="w-full p-2 border rounded bg-transparent"
-            value={formData.autonomous.shotsTaken || ""}
-            onChange={(e) => updateField("shotsTaken", e.target.value)}
+            value={formData.autonomous.shotsTaken ?? ""}
+            onChange={(e) =>
+              updateField("shotsTaken", toNumberOrNull(e.target.value))
+            }
           />
         </Card>
 
@@ -76,8 +82,10 @@ export default function Step3() {
             type="number"
             placeholder="例如：75"
             className="w-full p-2 border rounded bg-transparent"
-            value={formData.autonomous.subjectiveAccuracy || ""}
-            onChange={(e) => updateField("subjectiveAccuracy", e.target.value)}
+            value={formData.autonomous.subjectiveAccuracy ?? ""}
+            onChange={(e) =>
+              updateField("subjectiveAccuracy", toNumberOrNull(e.target.value))
+            }
           />
         </Card>
 

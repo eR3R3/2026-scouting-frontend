@@ -28,6 +28,10 @@ export default function Step4() {
     }));
   };
 
+  // 统一数字转换函数
+  const toNumberOrNull = (value: string) =>
+    value === "" ? null : Number(value);
+
   return (
     <main className="container mx-auto px-4 py-8 max-w-2xl">
       <div className="text-center mb-8">
@@ -44,8 +48,10 @@ export default function Step4() {
             type="number"
             placeholder="例如：10"
             className="w-full p-2 border rounded bg-transparent"
-            value={formData.teleop.fuelCount || ""}
-            onChange={(e) => updateField("fuelCount", e.target.value)}
+            value={formData.teleop.fuelCount ?? ""}
+            onChange={(e) =>
+              updateField("fuelCount", toNumberOrNull(e.target.value))
+            }
           />
         </Card>
 
@@ -56,8 +62,10 @@ export default function Step4() {
             type="number"
             placeholder="例如：5"
             className="w-full p-2 border rounded bg-transparent"
-            value={formData.teleop.humanFuelCount || ""}
-            onChange={(e) => updateField("humanFuelCount", e.target.value)}
+            value={formData.teleop.humanFuelCount ?? ""}
+            onChange={(e) =>
+              updateField("humanFuelCount", toNumberOrNull(e.target.value))
+            }
           />
         </Card>
 
@@ -68,8 +76,10 @@ export default function Step4() {
             type="number"
             placeholder="例如：6"
             className="w-full p-2 border rounded bg-transparent"
-            value={formData.teleop.shotsTaken || ""}
-            onChange={(e) => updateField("shotsTaken", e.target.value)}
+            value={formData.teleop.shotsTaken ?? ""}
+            onChange={(e) =>
+              updateField("shotsTaken", toNumberOrNull(e.target.value))
+            }
           />
         </Card>
 
@@ -92,8 +102,10 @@ export default function Step4() {
             type="number"
             placeholder="例如：70"
             className="w-full p-2 border rounded bg-transparent"
-            value={formData.teleop.subjectiveAccuracy || ""}
-            onChange={(e) => updateField("subjectiveAccuracy", e.target.value)}
+            value={formData.teleop.subjectiveAccuracy ?? ""}
+            onChange={(e) =>
+              updateField("subjectiveAccuracy", toNumberOrNull(e.target.value))
+            }
           />
         </Card>
 
