@@ -164,9 +164,9 @@ export default function Step1() {
     const key = Array.from(keys)[0] as string | undefined;
     const teamNumber = key ? Number(key) : 0;
 
-    // Auto-select alliance based on team's actual alliance in the match
+    // Auto-select alliance only for qual/final matches, not for practice/match
     let alliance = '';
-    if (teamNumber && selectedMatch?.tbaMatch) {
+    if (teamNumber && selectedMatch?.tbaMatch && (formData.matchType === MatchType.QUAL || formData.matchType === MatchType.FINAL)) {
       const redAlliance = selectedMatch.tbaMatch.redAlliance || [];
       const blueAlliance = selectedMatch.tbaMatch.blueAlliance || [];
       if (redAlliance.includes(teamNumber)) {
@@ -341,9 +341,9 @@ export default function Step1() {
               {/* Alliance Selection */}
               <div className="mt-4">
                 <label className="text-lg sm:text-xl text-default-600 block font-google-sans font-extrabold pb-2">
-                  Alliance {currentEvent?.sourceType === 'TBA' ? '(Auto-selected)' : ''}
+                  Alliance {currentEvent?.sourceType === 'TBA' && (formData.matchType === MatchType.QUAL || formData.matchType === MatchType.FINAL) ? '(Auto-selected)' : ''}
                 </label>
-                {currentEvent?.sourceType === 'TBA' ? (
+                {currentEvent?.sourceType === 'TBA' && (formData.matchType === MatchType.QUAL || formData.matchType === MatchType.FINAL) ? (
                   <div className="flex gap-2">
                     <div className={`px-4 py-2 rounded-lg ${formData.alliance === Alliance.RED ? 'bg-red-500 text-white' : 'bg-red-200'}`}>
                       Red Alliance
