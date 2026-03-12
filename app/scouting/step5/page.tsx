@@ -207,7 +207,7 @@ const Step5 = () => {
         {/* Climbing Time */}
         <Card className="p-6 backdrop-blur-md hover:shadow-lg transition-shadow duration-200 border-1 border-black dark:border-white">
           <label htmlFor="climbingTime" className="block text-lg mb-2">Climbing Time (seconds)</label>
-          <Input id="climbingTime" type="number" min="0" value={formData.endAndAfterGame.climbingTime || ''} onChange={handleNumberChange('climbingTime')} className="w-full" />
+          <Input id="climbingTime" type="number" min="0" value={formData.endAndAfterGame.climbingTime ? String(formData.endAndAfterGame.climbingTime) : ''} onChange={handleNumberChange('climbingTime')} className="w-full" />
         </Card>
 
         {/* Points */}
@@ -216,7 +216,7 @@ const Step5 = () => {
           <div className="space-y-4">
             <div>
               <label htmlFor="rankingPoint" className="block text-lg mb-2">Ranking Points</label>
-              <Input id="rankingPoint" type="number" min="0" max="6" value={formData.endAndAfterGame.rankingPoint || ''} onChange={handleNumberChange('rankingPoint')} className="w-full" />
+              <Input id="rankingPoint" type="number" min="0" max="6" value={formData.endAndAfterGame.rankingPoint ? String(formData.endAndAfterGame.rankingPoint) : ''} onChange={handleNumberChange('rankingPoint')} className="w-full" />
             </div>
             <div className="flex items-center">
               <input type="checkbox" id="coopPoint" checked={formData.endAndAfterGame.coopPoint} onChange={handleCheckboxChange('coopPoint')} className="w-6 h-6 rounded border-gray-300 text-primary focus:ring-primary" />

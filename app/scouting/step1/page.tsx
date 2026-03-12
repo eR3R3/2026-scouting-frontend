@@ -297,7 +297,7 @@ export default function Step1() {
                       type="number"
                       label="Match Number"
                       placeholder="Enter match number"
-                      value={formData.matchNumber || ''}
+                      value={formData.matchNumber ? String(formData.matchNumber) : ''}
                       onChange={(e) => handleTextOrNumberInputChange('matchNumber', e.target.value)}
                       min={0}
                       isRequired
@@ -329,7 +329,7 @@ export default function Step1() {
                       type="number"
                       label="Team Number"
                       placeholder="Enter team number"
-                      value={formData.team || ''}
+                      value={formData.team ? String(formData.team) : ''}
                       onChange={(e) => handleTextOrNumberInputChange('team', e.target.value)}
                       min={1}
                       isRequired
