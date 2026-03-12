@@ -42,7 +42,7 @@ yarn install
 创建 `.env.local` 文件并配置API端点：
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:3001/api
+NEXT_PUBLIC_API_URL=http://localhost:3001/
 ```
 
 ### 运行开发服务器

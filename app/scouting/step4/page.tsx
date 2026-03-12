@@ -2,8 +2,7 @@
 
 import { useForm } from "@/app/scouting/contexts/FormContent";
 import { useRouter } from "next/navigation";
-import { Card, Button, Tooltip, Select, SelectItem } from "@heroui/react";
-import { Add as AddIcon, Remove as RemoveIcon } from "@mui/icons-material";
+import { Card, Button, Select, SelectItem } from "@heroui/react";
 
 enum FetchBallPreference {
   DEPOT = 'Depot',
@@ -16,102 +15,109 @@ export default function Step4() {
   const { formData, setFormData } = useForm();
   const router = useRouter();
 
-  const handleNext = () => {
-    router.push("/scouting/step5");
-  };
+  const handleNext = () => router.push("/scouting/step5");
+  const handleGoBack = () => router.push("/scouting/step3");
 
-  function handleGoBack() {
-    router.push("/scouting/step3");
-  }
-
-  const handleIncrement = (field: string) => {
+  const updateField = (field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
       teleop: {
         ...prev.teleop,
-        [field]: (prev.teleop[field] || 0) + 1,
+        [field]: value,
       },
     }));
   };
 
-  const handleDecrement = (field: string) => {
-    setFormData(prev => ({
-      ...prev,
-      teleop: {
-        ...prev.teleop,
-        [field]: Math.max(0, (prev.teleop[field] || 0) - 1),
-      },
-    }));
-  };
-
-  const handleCheckbox = (field: string, checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      teleop: { ...prev.teleop, [field]: checked },
-    }));
-  };
-
-  const CounterButton = ({ placement, onClick, icon: Icon, label }) => (
-    <Tooltip
-      content={label}
-      classNames={{ content: "text-default-600 bg-white dark:bg-black" }}
-      placement={placement}
-    >
-      <button
-        onClick={onClick}
-        className="p-2 rounded-full hover:bg-gray-400 transition-all duration-200 active:bg-gray-400"
-        aria-label={label}
-      >
-        <Icon className="text-default-600" />
-      </button>
-    </Tooltip>
-  );
-
-  const Counter = ({ label, value, onIncrement, onDecrement }) => (
-    <Card className="w-full p-4 backdrop-blur-sm hover:shadow-md transition-shadow duration-200 border-1 border-black dark:border-white">
-      <div className="flex items-center justify-between gap-4">
-        <CounterButton placement="right" onClick={onDecrement} icon={RemoveIcon} label={`Decrease ${label}`} />
-        <div className="flex-1 text-center">
-          <span className="text-sm text-default-600 block">{label}</span>
-          <span className="text-2xl font-google-sans">{value}</span>
-        </div>
-        <CounterButton placement="left" onClick={onIncrement} icon={AddIcon} label={`Increase ${label}`} />
-      </div>
-    </Card>
-  );
+  // 统一数字转换函数
+  const toNumberOrNull = (value: string) =>
+    value === "" ? null : Number(value);
 
   return (
-    <main className="container mx-auto px-4 py-8 max-w-4xl">
+    <main className="container mx-auto px-4 py-8 max-w-2xl">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-google-sans font-extrabold mb-1">Teleop</h1>
         <div className="h-1 w-16 bg-primary mx-auto rounded-full" />
       </div>
 
-      <div className="space-y-6 max-w-md mx-auto">
-        {/* Fuel Counts */}
-        <Counter
-          label="Fuel Count (1 pt each)"
-          value={formData.teleop.fuelCount}
-          onIncrement={() => handleIncrement('fuelCount')}
-          onDecrement={() => handleDecrement('fuelCount')}
-        />
+      <div className="space-y-6">
 
-        <Counter
-          label="Human Fuel Count (1 pt each)"
-          value={formData.teleop.humanFuelCount}
-          onIncrement={() => handleIncrement('humanFuelCount')}
-          onDecrement={() => handleDecrement('humanFuelCount')}
-        />
+        {/* Fuel Count */}
+        <Card className="p-4 border-1 border-black dark:border-white">
+          <label className="block font-medium mb-2">Fuel Count（选填）</label>
+          <input
+            type="number"
+            placeholder="例如：10"
+            className="w-full p-2 border rounded bg-transparent"
+            value={formData.teleop.fuelCount ?? ""}
+            onChange={(e) =>
+              updateField("fuelCount", toNumberOrNull(e.target.value))
+            }
+          />
+        </Card>
+
+        {/* Human Fuel Count */}
+        <Card className="p-4 border-1 border-black dark:border-white">
+          <label className="block font-medium mb-2">Human Fuel Count（选填）</label>
+          <input
+            type="number"
+            placeholder="例如：5"
+            className="w-full p-2 border rounded bg-transparent"
+            value={formData.teleop.humanFuelCount ?? ""}
+            onChange={(e) =>
+              updateField("humanFuelCount", toNumberOrNull(e.target.value))
+            }
+          />
+        </Card>
+
+        {/* Shots Taken */}
+        <Card className="p-4 border-1 border-black dark:border-white">
+          <label className="block font-medium mb-2">射击次数（选填）</label>
+          <input
+            type="number"
+            placeholder="例如：6"
+            className="w-full p-2 border rounded bg-transparent"
+            value={formData.teleop.shotsTaken ?? ""}
+            onChange={(e) =>
+              updateField("shotsTaken", toNumberOrNull(e.target.value))
+            }
+          />
+        </Card>
+
+        {/* Shot Volumes */}
+        <Card className="p-4 border-1 border-black dark:border-white">
+          <label className="block font-medium mb-2">每次射击量（逗号分隔，选填）</label>
+          <input
+            type="text"
+            placeholder="例如：1,2,1,3"
+            className="w-full p-2 border rounded bg-transparent"
+            value={formData.teleop.shotVolumes || ""}
+            onChange={(e) => updateField("shotVolumes", e.target.value)}
+          />
+        </Card>
+
+        {/* Subjective Accuracy */}
+        <Card className="p-4 border-1 border-black dark:border-white">
+          <label className="block font-medium mb-2">主观准确率 %（选填）</label>
+          <input
+            type="number"
+            placeholder="例如：70"
+            className="w-full p-2 border rounded bg-transparent"
+            value={formData.teleop.subjectiveAccuracy ?? ""}
+            onChange={(e) =>
+              updateField("subjectiveAccuracy", toNumberOrNull(e.target.value))
+            }
+          />
+        </Card>
 
         {/* Checkboxes */}
-        <Card className="w-full p-4 backdrop-blur-md hover:shadow-lg transition-shadow duration-200 border-1 border-black dark:border-white">
+        <Card className="p-4 border-1 border-black dark:border-white">
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <input
                 type="checkbox"
                 id="passBump"
-                checked={formData.teleop.passBump}
-                onChange={(e) => handleCheckbox('passBump', e.target.checked)}
+                checked={formData.teleop.passBump || false}
+                onChange={(e) => updateField("passBump", e.target.checked)}
                 className="w-6 h-6 rounded border-gray-300 text-primary focus:ring-primary"
               />
               <label htmlFor="passBump" className="text-lg font-medium">
@@ -123,8 +129,8 @@ export default function Step4() {
               <input
                 type="checkbox"
                 id="passTrench"
-                checked={formData.teleop.passTrench}
-                onChange={(e) => handleCheckbox('passTrench', e.target.checked)}
+                checked={formData.teleop.passTrench || false}
+                onChange={(e) => updateField("passTrench", e.target.checked)}
                 className="w-6 h-6 rounded border-gray-300 text-primary focus:ring-primary"
               />
               <label htmlFor="passTrench" className="text-lg font-medium">
@@ -135,16 +141,17 @@ export default function Step4() {
         </Card>
 
         {/* Fetch Ball Preference */}
-        <Card className="w-full p-4 backdrop-blur-md hover:shadow-lg transition-shadow duration-200 border-1 border-black dark:border-white">
+        <Card className="p-4 border-1 border-black dark:border-white">
           <Select
-            label="Fetch Ball Preference"
-            selectedKeys={formData.teleop.fetchBallPreference ? new Set([formData.teleop.fetchBallPreference]) : new Set()}
+            label="Fetch Ball Preference（选填）"
+            selectedKeys={
+              formData.teleop.fetchBallPreference
+                ? new Set([formData.teleop.fetchBallPreference])
+                : new Set()
+            }
             onSelectionChange={(keys) => {
               const value = Array.from(keys)[0] as string;
-              setFormData(prev => ({
-                ...prev,
-                teleop: { ...prev.teleop, fetchBallPreference: value || '' },
-              }));
+              updateField("fetchBallPreference", value || "");
             }}
           >
             <SelectItem key={FetchBallPreference.DEPOT}>{FetchBallPreference.DEPOT}</SelectItem>
@@ -152,13 +159,14 @@ export default function Step4() {
             <SelectItem key={FetchBallPreference.NEUTRAL_ZONE}>{FetchBallPreference.NEUTRAL_ZONE}</SelectItem>
           </Select>
         </Card>
+
       </div>
 
       <div className="flex justify-between mt-12 px-4">
         <Button variant="flat" className="font-google-sans px-12" size="lg" onPress={handleGoBack}>
           Back
         </Button>
-        <Button color="primary" className="font-google-sans px-12 py-6" onPress={handleNext} size="lg">
+        <Button color="primary" className="font-google-sans px-12 py-6" size="lg" onPress={handleNext}>
           Next
         </Button>
       </div>
