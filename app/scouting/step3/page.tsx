@@ -4,7 +4,6 @@ import { useForm } from "@/app/scouting/contexts/FormContent";
 import { useRouter } from "next/navigation";
 import { Card, Button } from "@heroui/react";
 import { toast } from "@/hooks/use-toast";
-import { promptAbsentComment, submitAbsentScoutingRecord } from "@/app/scouting/utils/absentSubmit";
 
 export default function Step3() {
   // @ts-ignore
@@ -14,24 +13,21 @@ export default function Step3() {
   const handleNext = () => router.push("/scouting/step4");
   const handleGoBack = () => router.push("/scouting/step1");
 
-  const handleAbsentEnd = async () => {
-    const comment = promptAbsentComment();
-    if (comment === null) {
-      return;
-    }
-
-    try {
-      await submitAbsentScoutingRecord(formData, comment);
-      sessionStorage.removeItem('scoutingData');
-      toast({ title: 'Success', description: 'Absent record submitted successfully' });
-      router.push('/dashboard');
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error?.message || 'Failed to submit absent record',
-      });
-    }
+  const handleCurrentStepNoData = () => {
+    setFormData((prev) => ({
+      ...prev,
+      autonomous: {
+        autoStart: 0,
+        leftStartingZone: false,
+        fuelCount: 0,
+        isTowerSuccess: false,
+        shooterType: '',
+        shotsTaken: 0,
+        shotVolumes: '',
+        subjectiveAccuracy: 0,
+      },
+    }));
+    toast({ title: '已设置', description: '当前页已标记为无数据，可继续下一步。' });
   };
 
   const updateField = (field, value) => {
@@ -46,7 +42,7 @@ export default function Step3() {
 
   // 统一数字转换函数
   const toNumberOrNull = (value: string) =>
-    value === "" ? -1 : Number(value);
+    value === "" ? null : Number(value);
 
   return (
     <main className="container mx-auto px-4 py-8 max-w-2xl">
@@ -76,7 +72,7 @@ export default function Step3() {
           <label className="block font-medium mb-2">射击次数（选填）</label>
           <input
             type="number"
-            onWheel={(e) => e.target.blur()}
+            onWheel={(e) => e.currentTarget.blur()}
             placeholder="例如：5"
             className="w-full p-2 border rounded bg-transparent"
             value={formData.autonomous.shotsTaken ?? ""}
@@ -103,7 +99,7 @@ export default function Step3() {
           <label className="block font-medium mb-2">主观准确率 %（选填）</label>
           <input
             type="number"
-            onWheel={(e) => e.target.blur()}
+            onWheel={(e) => e.currentTarget.blur()}
             placeholder="例如：75"
             className="w-full p-2 border rounded bg-transparent"
             value={formData.autonomous.subjectiveAccuracy ?? ""}
@@ -124,8 +120,8 @@ export default function Step3() {
             Next
           </Button>
         </div>
-        <Button color="danger" className="font-google-sans w-full py-6" size="lg" onPress={handleAbsentEnd}>
-          缺勤并结束
+        <Button color="warning" className="font-google-sans w-full py-6" size="lg" onPress={handleCurrentStepNoData}>
+          本页无数据
         </Button>
       </div>
     </main>

@@ -6,7 +6,6 @@ import { useForm } from "@/app/scouting/contexts/FormContent";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { getCookie } from 'cookies-next/client';
-import { promptAbsentComment, submitAbsentScoutingRecord } from "@/app/scouting/utils/absentSubmit";
 
 const towerOptions = [
   { key: "None", label: "No Tower" },
@@ -14,6 +13,21 @@ const towerOptions = [
   { key: "L2", label: "Tower L2 (20 pts)" },
   { key: "L3", label: "Tower L3 (30 pts)" },
 ];
+
+const sanitizeNullToMinusOne = (value: any): any => {
+  if (value === null) {
+    return -1;
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeNullToMinusOne(item));
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, sanitizeNullToMinusOne(v)]),
+    );
+  }
+  return value;
+};
 
 const Step5 = () => {
   // @ts-ignore
@@ -89,6 +103,8 @@ const Step5 = () => {
         delete submitData.teleop.fetchBallPreference;
       }
 
+      submitData = sanitizeNullToMinusOne(submitData);
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/scouting/record`, {
         method: "POST",
         headers: {
@@ -132,24 +148,20 @@ const Step5 = () => {
     }
   };
 
-  const handleAbsentEnd = async () => {
-    const comment = promptAbsentComment();
-    if (comment === null) {
-      return;
-    }
-
-    try {
-      await submitAbsentScoutingRecord(formData, comment);
-      sessionStorage.removeItem('scoutingData');
-      toast({ title: 'Success', description: 'Absent record submitted successfully' });
-      router.push('/dashboard');
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error?.message || 'Failed to submit absent record',
-      });
-    }
+  const handleCurrentStepNoData = () => {
+    setFormData((prev) => ({
+      ...prev,
+      endAndAfterGame: {
+        towerStatus: 'None',
+        comments: 'No Data',
+        climbingTime: 0,
+        rankingPoint: 0,
+        coopPoint: false,
+        autonomousMove: false,
+        teleopMove: false,
+      },
+    }));
+    toast({ title: '已设置', description: '当前页已标记为无数据，可直接提交。' });
   };
 
   const handleCheckboxChange = (field) => (e) => {
@@ -234,7 +246,7 @@ const Step5 = () => {
         {/* Climbing Time */}
         <Card className="p-6 backdrop-blur-md hover:shadow-lg transition-shadow duration-200 border-1 border-black dark:border-white">
           <label htmlFor="climbingTime" className="block text-lg mb-2">Climbing Time (seconds)</label>
-          <Input id="climbingTime" type="number" onWheel={(e) => e.target.blur()} min="0" value={formData.endAndAfterGame.climbingTime || ''} onChange={handleNumberChange('climbingTime')} className="w-full" />
+          <Input id="climbingTime" type="number" onWheel={(e) => e.currentTarget.blur()} min="0" value={formData.endAndAfterGame.climbingTime || ''} onChange={handleNumberChange('climbingTime')} className="w-full" />
         </Card>
 
         {/* Points */}
@@ -264,7 +276,7 @@ const Step5 = () => {
           <Button variant="flat" className="font-google-sans px-12" size="lg" onPress={handleGoBack}>Back</Button>
           <Button color="primary" className="font-google-sans px-12 py-6" onPress={handleSubmit} size="lg">Submit</Button>
         </div>
-        <Button color="danger" className="font-google-sans w-full py-6" onPress={handleAbsentEnd} size="lg">缺勤并结束</Button>
+        <Button color="warning" className="font-google-sans w-full py-6" onPress={handleCurrentStepNoData} size="lg">本页无数据</Button>
       </div>
     </main>
   );

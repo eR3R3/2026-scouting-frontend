@@ -2,6 +2,21 @@
 
 import { getCookie } from 'cookies-next/client';
 
+const sanitizeNullToMinusOne = (value: any): any => {
+  if (value === null) {
+    return -1;
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeNullToMinusOne(item));
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, sanitizeNullToMinusOne(v)]),
+    );
+  }
+  return value;
+};
+
 const getAbsentPlaceholderPayload = (comment: string) => ({
   autonomous: {
     autoStart: 0,
@@ -99,6 +114,8 @@ export const submitAbsentScoutingRecord = async (formData: any, comment: string)
   if (!submitData.teleop?.fetchBallPreference) {
     delete submitData.teleop.fetchBallPreference;
   }
+
+  submitData = sanitizeNullToMinusOne(submitData);
 
   const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/scouting/record`, {
     method: 'POST',
