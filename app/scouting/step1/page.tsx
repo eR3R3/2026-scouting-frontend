@@ -6,6 +6,7 @@ import { Input, Button, Card, Select, SelectItem } from "@heroui/react";
 import { toast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { EventsAPI } from "@/lib/api/events";
+import { promptAbsentComment, submitAbsentScoutingRecord } from "@/app/scouting/utils/absentSubmit";
 
 enum MatchType {
   QUAL = 'Qualification',
@@ -100,7 +101,7 @@ export default function Step1() {
     load();
   }, [selectedEventId]);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     // Validation for required fields
     if (!formData.matchNumber && currentEvent?.sourceType === 'CUSTOM') {
       alert('Please enter a match number');
@@ -121,7 +122,28 @@ export default function Step1() {
       toast({ title: 'Error', description: 'Please fill in all required fields' });
       return;
     }
+
     router.push("/scouting/step3");
+  };
+
+  const handleAbsentEnd = async () => {
+    const comment = promptAbsentComment();
+    if (comment === null) {
+      return;
+    }
+
+    try {
+      await submitAbsentScoutingRecord(formData, comment);
+      sessionStorage.removeItem('scoutingData');
+      toast({ title: 'Success', description: 'Absent record submitted successfully' });
+      router.push('/dashboard');
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error?.message || 'Failed to submit absent record',
+      });
+    }
   };
 
   const handleGoBack = () => {
@@ -371,21 +393,30 @@ export default function Step1() {
                   </div>
                 )}
               </div>
-              
-              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+
+              <div className="flex flex-col gap-4 sm:gap-6">
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+                  <button
+                    type="button"
+                    onClick={handleGoBack}
+                    className="flex-1 px-6 sm:px-8 py-6 sm:py-8 rounded-lg border-3 border-gray-300 bg-transparent hover:bg-gray-100 font-google-sans text-xl sm:text-2xl font-semibold transition-all duration-300 transform hover:scale-105"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    className="flex-1 px-6 sm:px-8 py-6 sm:py-8 rounded-lg bg-black-500 text-white shadow-lg font-google-sans text-xl sm:text-2xl font-semibold transition-all duration-300 transform hover:scale-105"
+                  >
+                    Next
+                  </button>
+                </div>
                 <button
                   type="button"
-                  onClick={handleGoBack}
-                  className="flex-1 px-6 sm:px-8 py-6 sm:py-8 rounded-lg border-3 border-gray-300 bg-transparent hover:bg-gray-100 font-google-sans text-xl sm:text-2xl font-semibold transition-all duration-300 transform hover:scale-105"
+                  onClick={handleAbsentEnd}
+                  className="w-full px-6 sm:px-8 py-4 rounded-lg bg-red-600 text-white shadow-lg font-google-sans text-lg sm:text-xl font-semibold transition-all duration-300 hover:bg-red-700"
                 >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  className="flex-1 px-6 sm:px-8 py-6 sm:py-8 rounded-lg bg-black-500 text-white shadow-lg font-google-sans text-xl sm:text-2xl font-semibold transition-all duration-300 transform hover:scale-105"
-                >
-                  Next
+                  缺勤并结束
                 </button>
               </div>
             </div>

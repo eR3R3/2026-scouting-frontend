@@ -14,6 +14,21 @@ const towerOptions = [
   { key: "L3", label: "Tower L3 (30 pts)" },
 ];
 
+const sanitizeNullToMinusOne = (value: any): any => {
+  if (value === null) {
+    return -1;
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeNullToMinusOne(item));
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, sanitizeNullToMinusOne(v)]),
+    );
+  }
+  return value;
+};
+
 const Step5 = () => {
   // @ts-ignore
   const { formData, setFormData } = useForm();
@@ -84,6 +99,12 @@ const Step5 = () => {
         throw new Error('teamNumber is invalid');
       }
 
+      if (!submitData.teleop?.fetchBallPreference) {
+        delete submitData.teleop.fetchBallPreference;
+      }
+
+      submitData = sanitizeNullToMinusOne(submitData);
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/scouting/record`, {
         method: "POST",
         headers: {
@@ -113,6 +134,8 @@ const Step5 = () => {
         router.push("/dashboard");
       } else {
         toast({
+          variant: "destructive",
+          title: "Error",
           description: data.message || "Failed to submit match record",
         });
       }
@@ -123,6 +146,22 @@ const Step5 = () => {
         description: "An error occurred while submitting",
       });
     }
+  };
+
+  const handleCurrentStepNoData = () => {
+    setFormData((prev) => ({
+      ...prev,
+      endAndAfterGame: {
+        towerStatus: 'None',
+        comments: 'No Data',
+        climbingTime: 0,
+        rankingPoint: 0,
+        coopPoint: false,
+        autonomousMove: false,
+        teleopMove: false,
+      },
+    }));
+    toast({ title: '已设置', description: '当前页已标记为无数据，可直接提交。' });
   };
 
   const handleCheckboxChange = (field) => (e) => {
@@ -207,7 +246,7 @@ const Step5 = () => {
         {/* Climbing Time */}
         <Card className="p-6 backdrop-blur-md hover:shadow-lg transition-shadow duration-200 border-1 border-black dark:border-white">
           <label htmlFor="climbingTime" className="block text-lg mb-2">Climbing Time (seconds)</label>
-          <Input id="climbingTime" type="number" min="0" value={formData.endAndAfterGame.climbingTime || ''} onChange={handleNumberChange('climbingTime')} className="w-full" />
+          <Input id="climbingTime" type="number" onWheel={(e) => e.currentTarget.blur()} min="0" value={formData.endAndAfterGame.climbingTime || ''} onChange={handleNumberChange('climbingTime')} className="w-full" />
         </Card>
 
         {/* Points */}
@@ -232,9 +271,12 @@ const Step5 = () => {
         </Card>
       </div>
 
-      <div className="flex justify-between mt-12 px-4">
-        <Button variant="flat" className="font-google-sans px-12" size="lg" onPress={handleGoBack}>Back</Button>
-        <Button color="primary" className="font-google-sans px-12 py-6" onPress={handleSubmit} size="lg">Submit</Button>
+      <div className="mt-12 px-4 space-y-4">
+        <div className="flex justify-between gap-4">
+          <Button variant="flat" className="font-google-sans px-12" size="lg" onPress={handleGoBack}>Back</Button>
+          <Button color="primary" className="font-google-sans px-12 py-6" onPress={handleSubmit} size="lg">Submit</Button>
+        </div>
+        <Button color="warning" className="font-google-sans w-full py-6" onPress={handleCurrentStepNoData} size="lg">本页无数据</Button>
       </div>
     </main>
   );

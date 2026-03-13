@@ -3,6 +3,7 @@
 import { useForm } from "@/app/scouting/contexts/FormContent";
 import { useRouter } from "next/navigation";
 import { Card, Button, Select, SelectItem } from "@heroui/react";
+import { toast } from "@/hooks/use-toast";
 
 enum FetchBallPreference {
   DEPOT = 'Depot',
@@ -17,6 +18,23 @@ export default function Step4() {
 
   const handleNext = () => router.push("/scouting/step5");
   const handleGoBack = () => router.push("/scouting/step3");
+
+  const handleCurrentStepNoData = () => {
+    setFormData((prev) => ({
+      ...prev,
+      teleop: {
+        fuelCount: 0,
+        humanFuelCount: 0,
+        passBump: false,
+        passTrench: false,
+        fetchBallPreference: undefined,
+        shotsTaken: 0,
+        shotVolumes: '',
+        subjectiveAccuracy: 0,
+      },
+    }));
+    toast({ title: '已设置', description: '当前页已标记为无数据，可继续下一步。' });
+  };
 
   const updateField = (field: string, value: any) => {
     setFormData(prev => ({
@@ -43,9 +61,10 @@ export default function Step4() {
 
         {/* Fuel Count */}
         <Card className="p-4 border-1 border-black dark:border-white">
-          <label className="block font-medium mb-2">Fuel Count（选填）</label>
+          <label className="block font-medium mb-2">出球数（选填）</label>
           <input
             type="number"
+            onWheel={(e) => e.currentTarget.blur()}
             placeholder="例如：10"
             className="w-full p-2 border rounded bg-transparent"
             value={formData.teleop.fuelCount ?? ""}
@@ -55,25 +74,12 @@ export default function Step4() {
           />
         </Card>
 
-        {/* Human Fuel Count */}
-        <Card className="p-4 border-1 border-black dark:border-white">
-          <label className="block font-medium mb-2">Human Fuel Count（选填）</label>
-          <input
-            type="number"
-            placeholder="例如：5"
-            className="w-full p-2 border rounded bg-transparent"
-            value={formData.teleop.humanFuelCount ?? ""}
-            onChange={(e) =>
-              updateField("humanFuelCount", toNumberOrNull(e.target.value))
-            }
-          />
-        </Card>
-
         {/* Shots Taken */}
         <Card className="p-4 border-1 border-black dark:border-white">
-          <label className="block font-medium mb-2">射击次数（选填）</label>
+          <label className="block font-medium mb-2">进球数（选填）</label>
           <input
             type="number"
+            onWheel={(e) => e.currentTarget.blur()}
             placeholder="例如：6"
             className="w-full p-2 border rounded bg-transparent"
             value={formData.teleop.shotsTaken ?? ""}
@@ -83,28 +89,17 @@ export default function Step4() {
           />
         </Card>
 
-        {/* Shot Volumes */}
+        {/* Human Fuel Count */}
         <Card className="p-4 border-1 border-black dark:border-white">
-          <label className="block font-medium mb-2">每次射击量（逗号分隔，选填）</label>
-          <input
-            type="text"
-            placeholder="例如：1,2,1,3"
-            className="w-full p-2 border rounded bg-transparent"
-            value={formData.teleop.shotVolumes || ""}
-            onChange={(e) => updateField("shotVolumes", e.target.value)}
-          />
-        </Card>
-
-        {/* Subjective Accuracy */}
-        <Card className="p-4 border-1 border-black dark:border-white">
-          <label className="block font-medium mb-2">主观准确率 %（选填）</label>
+          <label className="block font-medium mb-2">Human Fuel Count（选填）</label>
           <input
             type="number"
-            placeholder="例如：70"
+            onWheel={(e) => e.currentTarget.blur()}
+            placeholder="例如：5"
             className="w-full p-2 border rounded bg-transparent"
-            value={formData.teleop.subjectiveAccuracy ?? ""}
+            value={formData.teleop.humanFuelCount ?? ""}
             onChange={(e) =>
-              updateField("subjectiveAccuracy", toNumberOrNull(e.target.value))
+              updateField("humanFuelCount", toNumberOrNull(e.target.value))
             }
           />
         </Card>
@@ -151,7 +146,7 @@ export default function Step4() {
             }
             onSelectionChange={(keys) => {
               const value = Array.from(keys)[0] as string;
-              updateField("fetchBallPreference", value || "");
+              updateField("fetchBallPreference", value || undefined);
             }}
           >
             <SelectItem key={FetchBallPreference.DEPOT}>{FetchBallPreference.DEPOT}</SelectItem>
@@ -162,12 +157,17 @@ export default function Step4() {
 
       </div>
 
-      <div className="flex justify-between mt-12 px-4">
-        <Button variant="flat" className="font-google-sans px-12" size="lg" onPress={handleGoBack}>
-          Back
-        </Button>
-        <Button color="primary" className="font-google-sans px-12 py-6" size="lg" onPress={handleNext}>
-          Next
+      <div className="mt-12 px-4 space-y-4">
+        <div className="flex justify-between gap-4">
+          <Button variant="flat" className="font-google-sans px-12" size="lg" onPress={handleGoBack}>
+            Back
+          </Button>
+          <Button color="primary" className="font-google-sans px-12 py-6" size="lg" onPress={handleNext}>
+            Next
+          </Button>
+        </div>
+        <Button color="warning" className="font-google-sans w-full py-6" size="lg" onPress={handleCurrentStepNoData}>
+          本页无数据
         </Button>
       </div>
     </main>

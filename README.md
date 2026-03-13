@@ -44,6 +44,15 @@ yarn install
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3001/
 ```
+### 配置临时docker数据库
+
+1. docker stop scouting-db 
+docker rm scouting-db 
+docker run --name scouting-db \
+-e POSTGRES_PASSWORD=123456 \
+-p 5432:5432 \
+-v workspaces_pgdata:/var/lib/postgresql/data \
+-d postgres:16
 
 ### 运行开发服务器
 
@@ -133,16 +142,6 @@ npm install
 3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
 4. 推送到分支 (`git push origin feature/AmazingFeature`)
 5. 打开Pull Request
-
-## database
-1. docker stop scouting-db
-docker rm scouting-db
-docker run --name scouting-db \
-  -e POSTGRES_PASSWORD=123456 \
-  -p 5432:5432 \
-  -v workspaces_pgdata:/var/lib/postgresql/data \
-  -d postgres:16
-
 
 ## 许可证
 
