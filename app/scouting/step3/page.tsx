@@ -64,6 +64,7 @@ export default function Step3() {
             <option value="">未选择</option>
             <option value="turret">炮塔</option>
             <option value="non-turret">非炮塔</option>
+            <option value="noturret">无炮塔</option>
           </select>
         </Card>
 
