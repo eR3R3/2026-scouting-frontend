@@ -84,6 +84,10 @@ const Step5 = () => {
         throw new Error('teamNumber is invalid');
       }
 
+      if (!submitData.teleop?.fetchBallPreference) {
+        delete submitData.teleop.fetchBallPreference;
+      }
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/scouting/record`, {
         method: "POST",
         headers: {

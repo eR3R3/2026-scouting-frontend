@@ -6,6 +6,7 @@ import { Input, Button, Card, Select, SelectItem } from "@heroui/react";
 import { toast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { EventsAPI } from "@/lib/api/events";
+import { getCookie } from 'cookies-next/client';
 
 enum MatchType {
   QUAL = 'Qualification',
@@ -29,6 +30,110 @@ export default function Step1() {
   const [teams, setTeams] = useState<any[]>([]);
   const [eventsLoading, setEventsLoading] = useState<boolean>(true);
   const [matchesLoading, setMatchesLoading] = useState<boolean>(false);
+
+  const getAbsentPlaceholderPayload = () => ({
+    autonomous: {
+      autoStart: 0,
+      leftStartingZone: false,
+      fuelCount: 0,
+      isTowerSuccess: false,
+      shooterType: '',
+      shotsTaken: 0,
+      shotVolumes: '',
+      subjectiveAccuracy: 0,
+    },
+    teleop: {
+      fuelCount: 0,
+      humanFuelCount: 0,
+      passBump: false,
+      passTrench: false,
+      shotsTaken: 0,
+      shotVolumes: '',
+      subjectiveAccuracy: 0,
+    },
+    endAndAfterGame: {
+      towerStatus: 'None',
+      comments: 'Absent',
+      climbingTime: 0,
+      rankingPoint: 0,
+      coopPoint: false,
+      autonomousMove: false,
+      teleopMove: false,
+    },
+  });
+
+  const submitAbsentRecord = async () => {
+    const scoutingData = sessionStorage.getItem('scoutingData');
+    let submitData: any = {
+      scoutEventId: formData.eventId,
+      eventMatchId: formData.eventMatchId,
+      matchType: formData.matchType,
+      alliance: formData.alliance,
+      teamNumber: formData.team,
+      matchNumber: formData.matchNumber,
+      ...getAbsentPlaceholderPayload(),
+    };
+
+    if (scoutingData) {
+      const data = JSON.parse(scoutingData);
+
+      if (data.selectedMatch && data.selectedTeam) {
+        submitData = {
+          ...submitData,
+          scoutEventId: data.eventId,
+          eventMatchId: data.selectedMatch.id,
+          teamNumber: data.selectedTeam.teamNumber,
+          alliance: data.selectedMatch.tbaMatch?.redAlliance?.includes(data.selectedTeam.teamNumber)
+            ? 'Red'
+            : 'Blue',
+          matchType: data.selectedMatch.tbaMatch?.matchType || submitData.matchType,
+        };
+      }
+
+      if (data.matchNumber !== undefined || data.matchType || data.teamNumber || data.alliance) {
+        submitData = {
+          ...submitData,
+          scoutEventId: data.eventId || submitData.scoutEventId,
+          matchType: data.matchType || submitData.matchType,
+          matchNumber: data.matchNumber !== undefined ? data.matchNumber : submitData.matchNumber,
+          teamNumber: data.teamNumber || submitData.teamNumber,
+          alliance: data.alliance || submitData.alliance,
+        };
+      }
+    }
+
+    if (!submitData.scoutEventId || typeof submitData.scoutEventId !== 'string') {
+      throw new Error('scoutEventId is missing');
+    }
+    if (!Number.isInteger(submitData.teamNumber) || submitData.teamNumber < 1) {
+      throw new Error('teamNumber is invalid');
+    }
+
+    if (!submitData.teleop?.fetchBallPreference) {
+      delete submitData.teleop.fetchBallPreference;
+    }
+
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/scouting/record`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${getCookie("Authorization")}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(submitData),
+    });
+
+    const text = await response.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (e) {
+      data = {};
+    }
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to submit absent record');
+    }
+  };
 
   // Get current event from events array
   const currentEvent = events.find(e => e.id === selectedEventId);
@@ -100,7 +205,7 @@ export default function Step1() {
     load();
   }, [selectedEventId]);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     // Validation for required fields
     if (!formData.matchNumber && currentEvent?.sourceType === 'CUSTOM') {
       alert('Please enter a match number');
@@ -121,6 +226,23 @@ export default function Step1() {
       toast({ title: 'Error', description: 'Please fill in all required fields' });
       return;
     }
+
+    if (formData.absent) {
+      try {
+        await submitAbsentRecord();
+        sessionStorage.removeItem('scoutingData');
+        toast({ title: 'Success', description: 'Absent record submitted successfully' });
+        router.push('/dashboard');
+      } catch (error: any) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: error?.message || 'Failed to submit absent record',
+        });
+      }
+      return;
+    }
+
     router.push("/scouting/step3");
   };
 
@@ -371,6 +493,21 @@ export default function Step1() {
                   </div>
                 )}
               </div>
+
+              <div className="mt-4">
+                <label className="flex items-center gap-3 text-lg sm:text-xl text-default-700 font-google-sans font-semibold">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(formData.absent)}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, absent: e.target.checked }))}
+                    className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  缺勤
+                </label>
+                <p className="text-sm text-default-500 mt-2">
+                  勾选后将直接结束并提交缺勤记录，后续步骤无需填写。
+                </p>
+              </div>
               
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
                 <button
@@ -385,7 +522,7 @@ export default function Step1() {
                   onClick={handleNext}
                   className="flex-1 px-6 sm:px-8 py-6 sm:py-8 rounded-lg bg-black-500 text-white shadow-lg font-google-sans text-xl sm:text-2xl font-semibold transition-all duration-300 transform hover:scale-105"
                 >
-                  Next
+                  {formData.absent ? '结束' : 'Next'}
                 </button>
               </div>
             </div>

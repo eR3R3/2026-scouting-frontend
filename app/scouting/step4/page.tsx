@@ -151,7 +151,7 @@ export default function Step4() {
             }
             onSelectionChange={(keys) => {
               const value = Array.from(keys)[0] as string;
-              updateField("fetchBallPreference", value || "");
+              updateField("fetchBallPreference", value || undefined);
             }}
           >
             <SelectItem key={FetchBallPreference.DEPOT}>{FetchBallPreference.DEPOT}</SelectItem>

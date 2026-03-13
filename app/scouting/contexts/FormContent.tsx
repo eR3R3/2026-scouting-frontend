@@ -9,6 +9,7 @@ export const FormProvider = ({ children }) => {
   const [formData, setFormData] = useState({
     eventId: "",
     eventMatchId: "",
+    absent: false,
     scoutingData: null,
     matchType: "",
     matchNumber: 0,
