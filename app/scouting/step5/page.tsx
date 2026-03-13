@@ -234,7 +234,7 @@ const Step5 = () => {
         {/* Climbing Time */}
         <Card className="p-6 backdrop-blur-md hover:shadow-lg transition-shadow duration-200 border-1 border-black dark:border-white">
           <label htmlFor="climbingTime" className="block text-lg mb-2">Climbing Time (seconds)</label>
-          <Input id="climbingTime" type="number" min="0" value={formData.endAndAfterGame.climbingTime || ''} onChange={handleNumberChange('climbingTime')} className="w-full" />
+          <Input id="climbingTime" type="number" onWheel={(e) => e.target.blur()} min="0" value={formData.endAndAfterGame.climbingTime || ''} onChange={handleNumberChange('climbingTime')} className="w-full" />
         </Card>
 
         {/* Points */}

@@ -52,7 +52,7 @@ export default function Step4() {
 
   // 统一数字转换函数
   const toNumberOrNull = (value: string) =>
-    value === "" ? null : Number(value);
+    value === "" ? -1 : Number(value);
 
   return (
     <main className="container mx-auto px-4 py-8 max-w-2xl">
@@ -68,6 +68,7 @@ export default function Step4() {
           <label className="block font-medium mb-2">Fuel Count（选填）</label>
           <input
             type="number"
+            onWheel={(e) => e.target.blur()}
             placeholder="例如：10"
             className="w-full p-2 border rounded bg-transparent"
             value={formData.teleop.fuelCount ?? ""}
@@ -82,6 +83,7 @@ export default function Step4() {
           <label className="block font-medium mb-2">Human Fuel Count（选填）</label>
           <input
             type="number"
+            onWheel={(e) => e.target.blur()}
             placeholder="例如：5"
             className="w-full p-2 border rounded bg-transparent"
             value={formData.teleop.humanFuelCount ?? ""}
@@ -96,6 +98,7 @@ export default function Step4() {
           <label className="block font-medium mb-2">射击次数（选填）</label>
           <input
             type="number"
+            onWheel={(e) => e.target.blur()}
             placeholder="例如：6"
             className="w-full p-2 border rounded bg-transparent"
             value={formData.teleop.shotsTaken ?? ""}
@@ -122,6 +125,7 @@ export default function Step4() {
           <label className="block font-medium mb-2">主观准确率 %（选填）</label>
           <input
             type="number"
+            onWheel={(e) => e.target.blur()}
             placeholder="例如：70"
             className="w-full p-2 border rounded bg-transparent"
             value={formData.teleop.subjectiveAccuracy ?? ""}

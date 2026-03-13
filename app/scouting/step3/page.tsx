@@ -46,7 +46,7 @@ export default function Step3() {
 
   // 统一数字转换函数
   const toNumberOrNull = (value: string) =>
-    value === "" ? null : Number(value);
+    value === "" ? -1 : Number(value);
 
   return (
     <main className="container mx-auto px-4 py-8 max-w-2xl">
@@ -76,6 +76,7 @@ export default function Step3() {
           <label className="block font-medium mb-2">射击次数（选填）</label>
           <input
             type="number"
+            onWheel={(e) => e.target.blur()}
             placeholder="例如：5"
             className="w-full p-2 border rounded bg-transparent"
             value={formData.autonomous.shotsTaken ?? ""}
@@ -102,6 +103,7 @@ export default function Step3() {
           <label className="block font-medium mb-2">主观准确率 %（选填）</label>
           <input
             type="number"
+            onWheel={(e) => e.target.blur()}
             placeholder="例如：75"
             className="w-full p-2 border rounded bg-transparent"
             value={formData.autonomous.subjectiveAccuracy ?? ""}
