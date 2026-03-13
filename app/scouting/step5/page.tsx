@@ -6,6 +6,7 @@ import { useForm } from "@/app/scouting/contexts/FormContent";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { getCookie } from 'cookies-next/client';
+import { promptAbsentComment, submitAbsentScoutingRecord } from "@/app/scouting/utils/absentSubmit";
 
 const towerOptions = [
   { key: "None", label: "No Tower" },
@@ -131,6 +132,26 @@ const Step5 = () => {
     }
   };
 
+  const handleAbsentEnd = async () => {
+    const comment = promptAbsentComment();
+    if (comment === null) {
+      return;
+    }
+
+    try {
+      await submitAbsentScoutingRecord(formData, comment);
+      sessionStorage.removeItem('scoutingData');
+      toast({ title: 'Success', description: 'Absent record submitted successfully' });
+      router.push('/dashboard');
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error?.message || 'Failed to submit absent record',
+      });
+    }
+  };
+
   const handleCheckboxChange = (field) => (e) => {
     setFormData({
       ...formData,
@@ -238,9 +259,12 @@ const Step5 = () => {
         </Card>
       </div>
 
-      <div className="flex justify-between mt-12 px-4">
-        <Button variant="flat" className="font-google-sans px-12" size="lg" onPress={handleGoBack}>Back</Button>
-        <Button color="primary" className="font-google-sans px-12 py-6" onPress={handleSubmit} size="lg">Submit</Button>
+      <div className="mt-12 px-4 space-y-4">
+        <div className="flex justify-between gap-4">
+          <Button variant="flat" className="font-google-sans px-12" size="lg" onPress={handleGoBack}>Back</Button>
+          <Button color="primary" className="font-google-sans px-12 py-6" onPress={handleSubmit} size="lg">Submit</Button>
+        </div>
+        <Button color="danger" className="font-google-sans w-full py-6" onPress={handleAbsentEnd} size="lg">缺勤并结束</Button>
       </div>
     </main>
   );

@@ -3,6 +3,8 @@
 import { useForm } from "@/app/scouting/contexts/FormContent";
 import { useRouter } from "next/navigation";
 import { Card, Button, Select, SelectItem } from "@heroui/react";
+import { toast } from "@/hooks/use-toast";
+import { promptAbsentComment, submitAbsentScoutingRecord } from "@/app/scouting/utils/absentSubmit";
 
 enum FetchBallPreference {
   DEPOT = 'Depot',
@@ -17,6 +19,26 @@ export default function Step4() {
 
   const handleNext = () => router.push("/scouting/step5");
   const handleGoBack = () => router.push("/scouting/step3");
+
+  const handleAbsentEnd = async () => {
+    const comment = promptAbsentComment();
+    if (comment === null) {
+      return;
+    }
+
+    try {
+      await submitAbsentScoutingRecord(formData, comment);
+      sessionStorage.removeItem('scoutingData');
+      toast({ title: 'Success', description: 'Absent record submitted successfully' });
+      router.push('/dashboard');
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error?.message || 'Failed to submit absent record',
+      });
+    }
+  };
 
   const updateField = (field: string, value: any) => {
     setFormData(prev => ({
@@ -162,12 +184,17 @@ export default function Step4() {
 
       </div>
 
-      <div className="flex justify-between mt-12 px-4">
-        <Button variant="flat" className="font-google-sans px-12" size="lg" onPress={handleGoBack}>
-          Back
-        </Button>
-        <Button color="primary" className="font-google-sans px-12 py-6" size="lg" onPress={handleNext}>
-          Next
+      <div className="mt-12 px-4 space-y-4">
+        <div className="flex justify-between gap-4">
+          <Button variant="flat" className="font-google-sans px-12" size="lg" onPress={handleGoBack}>
+            Back
+          </Button>
+          <Button color="primary" className="font-google-sans px-12 py-6" size="lg" onPress={handleNext}>
+            Next
+          </Button>
+        </div>
+        <Button color="danger" className="font-google-sans w-full py-6" size="lg" onPress={handleAbsentEnd}>
+          缺勤并结束
         </Button>
       </div>
     </main>
