@@ -44,6 +44,15 @@ yarn install
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3001/
 ```
+### 配置临时docker数据库
+
+1. docker stop scouting-db 
+docker rm scouting-db 
+docker run --name scouting-db \
+-e POSTGRES_PASSWORD=123456 \
+-p 5432:5432 \
+-v workspaces_pgdata:/var/lib/postgresql/data \
+-d postgres:16
 
 ### 运行开发服务器
 

@@ -69,7 +69,7 @@ export default function Step3() {
 
         {/* 射击次数 */}
         <Card className="p-4 border-1 border-black dark:border-white">
-          <label className="block font-medium mb-2">射击次数（选填）</label>
+          <label className="block font-medium mb-2">出球数（选填）</label>
           <input
             type="number"
             onWheel={(e) => e.currentTarget.blur()}
@@ -84,28 +84,13 @@ export default function Step3() {
 
         {/* 每次射击量 */}
         <Card className="p-4 border-1 border-black dark:border-white">
-          <label className="block font-medium mb-2">每次射击量（逗号分隔，选填）</label>
+          <label className="block font-medium mb-2">进球数（逗号分隔，选填）</label>
           <input
             type="text"
             placeholder="例如：1,2,1,3"
             className="w-full p-2 border rounded bg-transparent"
             value={formData.autonomous.shotVolumes || ""}
             onChange={(e) => updateField("shotVolumes", e.target.value)}
-          />
-        </Card>
-
-        {/* 主观准确率 */}
-        <Card className="p-4 border-1 border-black dark:border-white">
-          <label className="block font-medium mb-2">主观准确率 %（选填）</label>
-          <input
-            type="number"
-            onWheel={(e) => e.currentTarget.blur()}
-            placeholder="例如：75"
-            className="w-full p-2 border rounded bg-transparent"
-            value={formData.autonomous.subjectiveAccuracy ?? ""}
-            onChange={(e) =>
-              updateField("subjectiveAccuracy", toNumberOrNull(e.target.value))
-            }
           />
         </Card>
 
