@@ -113,6 +113,8 @@ const Step5 = () => {
         router.push("/dashboard");
       } else {
         toast({
+          variant: "destructive",
+          title: "Error",
           description: data.message || "Failed to submit match record",
         });
       }

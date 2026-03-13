@@ -134,16 +134,6 @@ npm install
 4. 推送到分支 (`git push origin feature/AmazingFeature`)
 5. 打开Pull Request
 
-## database
-1. docker stop scouting-db
-docker rm scouting-db
-docker run --name scouting-db \
-  -e POSTGRES_PASSWORD=123456 \
-  -p 5432:5432 \
-  -v workspaces_pgdata:/var/lib/postgresql/data \
-  -d postgres:16
-
-
 ## 许可证
 
 此项目使用MIT许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
