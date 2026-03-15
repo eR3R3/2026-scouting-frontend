@@ -3,6 +3,7 @@
 import { useForm } from "@/app/scouting/contexts/FormContent";
 import { useRouter } from "next/navigation";
 import { Card, Button } from "@heroui/react";
+import { toast } from "@/hooks/use-toast";
 
 export default function Step3() {
   // @ts-ignore
@@ -11,6 +12,23 @@ export default function Step3() {
 
   const handleNext = () => router.push("/scouting/step4");
   const handleGoBack = () => router.push("/scouting/step1");
+
+  const handleCurrentStepNoData = () => {
+    setFormData((prev) => ({
+      ...prev,
+      autonomous: {
+        autoStart: 0,
+        leftStartingZone: false,
+        fuelCount: 0,
+        isTowerSuccess: false,
+        shooterType: '',
+        shotsTaken: 0,
+        shotVolumes: '',
+        subjectiveAccuracy: 0,
+      },
+    }));
+    toast({ title: '已设置', description: '当前页已标记为无数据，可继续下一步。' });
+  };
 
   const updateField = (field, value) => {
     setFormData(prev => ({
@@ -46,14 +64,16 @@ export default function Step3() {
             <option value="">未选择</option>
             <option value="turret">炮塔</option>
             <option value="non-turret">非炮塔</option>
+            <option value="noturret">无炮塔</option>
           </select>
         </Card>
 
         {/* 射击次数 */}
         <Card className="p-4 border-1 border-black dark:border-white">
-          <label className="block font-medium mb-2">射击次数（选填）</label>
+          <label className="block font-medium mb-2">出球数（选填）</label>
           <input
             type="number"
+            onWheel={(e) => e.currentTarget.blur()}
             placeholder="例如：5"
             className="w-full p-2 border rounded bg-transparent"
             value={formData.autonomous.shotsTaken ?? ""}
@@ -65,7 +85,7 @@ export default function Step3() {
 
         {/* 每次射击量 */}
         <Card className="p-4 border-1 border-black dark:border-white">
-          <label className="block font-medium mb-2">每次射击量（逗号分隔，选填）</label>
+          <label className="block font-medium mb-2">进球数（逗号分隔，选填）</label>
           <input
             type="text"
             placeholder="例如：1,2,1,3"
@@ -75,28 +95,19 @@ export default function Step3() {
           />
         </Card>
 
-        {/* 主观准确率 */}
-        <Card className="p-4 border-1 border-black dark:border-white">
-          <label className="block font-medium mb-2">主观准确率 %（选填）</label>
-          <input
-            type="number"
-            placeholder="例如：75"
-            className="w-full p-2 border rounded bg-transparent"
-            value={formData.autonomous.subjectiveAccuracy ?? ""}
-            onChange={(e) =>
-              updateField("subjectiveAccuracy", toNumberOrNull(e.target.value))
-            }
-          />
-        </Card>
-
       </div>
 
-      <div className="flex justify-between mt-12 px-4">
-        <Button variant="flat" className="font-google-sans px-12" size="lg" onPress={handleGoBack}>
-          Back
-        </Button>
-        <Button color="primary" className="font-google-sans px-12 py-6" size="lg" onPress={handleNext}>
-          Next
+      <div className="mt-12 px-4 space-y-4">
+        <div className="flex justify-between gap-4">
+          <Button variant="flat" className="font-google-sans px-12" size="lg" onPress={handleGoBack}>
+            Back
+          </Button>
+          <Button color="primary" className="font-google-sans px-12 py-6" size="lg" onPress={handleNext}>
+            Next
+          </Button>
+        </div>
+        <Button color="warning" className="font-google-sans w-full py-6" size="lg" onPress={handleCurrentStepNoData}>
+          本页无数据
         </Button>
       </div>
     </main>
