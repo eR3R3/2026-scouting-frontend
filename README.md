@@ -2,6 +2,10 @@
 
 一个用于FRC机器人比赛数据收集和分析的现代化前端应用。
 
+## Plain Summary
+
+This project is a frontend app for FRC scouting. It helps teams create events, collect match and pit scouting data, and review team performance in charts and dashboards. The app is built with Next.js and talks to a separate backend API for authentication, event data, and scouting records.
+
 ## 功能特性
 
 - 🤖 比赛数据收集和管理
